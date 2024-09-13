@@ -1,0 +1,25 @@
+env: local 
+
+logger:
+  level: "info"
+  destination: "./api/logs/local"
+  channel: "daily"
+
+http:
+  port: 8080
+  maxHeaderBytes: 1
+  readTimeout: 10s
+  writeTimeout: 10s
+
+db:
+  host: localhost
+  port: 5432
+  username: admin
+  password: admin
+  name: db
+  mode: "disable"
+
+auth:
+  accessTokenTTL: 2h
+  refreshTokenTTL: 720h #30 days
+  verificationCodeLength: 8
