@@ -11,6 +11,16 @@ import (
 	"github.com/spf13/viper"
 )
 
+const (
+	defaultLoggerlevel        = "info"
+	defaultHttpPort           = ":8080"
+	defaultHttpMaxHeaderBytes = 1
+	defaultHttpReadTimeout    = "10s"
+	defaultHttpWriteTimeout   = "10s"
+	defaultJWTAccessTokenTTL  = "2h"
+	defaultJWTRefreshTokenTTL = "720h"
+)
+
 type Config struct {
 	Logger  LoggerConfig
 	Http    HttpConfig
@@ -45,12 +55,7 @@ type HttpConfig struct {
 }
 
 type DBConfig struct {
-	Host     string `mapstructure:"host"`
-	Port     string `mapstructure:"port"`
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
-	DBName   string `mapstructure:"name"`
-	SSLMode  string `mapstructure:"mode"`
+	DSN string `mapstructure:"dsn"`
 }
 
 func NewConfig(cfgPath string) (Config, error) {
