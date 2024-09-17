@@ -1,14 +1,34 @@
 package config
 
 import (
+	"errors"
+	"flag"
+	"fmt"
 	"io"
 	"os"
 	"path"
 	"time"
 
+	"github.com/caarlos0/env"
 	"github.com/joho/godotenv"
 	"github.com/mihailtudos/gophermart/internal/logger"
 	"github.com/spf13/viper"
+)
+
+const (
+	defaultLoggerlevel       = "info"
+	defaultLoggerDestination = ""
+	defaultLoggerChannel     = "stack"
+
+	defaultHttpPort           = ":8080"
+	defaultHttpMaxHeaderBytes = 1
+	defaultHttpReadTimeout    = "10s"
+	defaultHttpWriteTimeout   = "10s"
+
+	defaultJWTAccessTokenTTL  = "2h"
+	defaultJWTRefreshTokenTTL = "720h"
+
+	defaultAccrualSysAddress = "http://localhost:8000"
 )
 
 type Config struct {
@@ -16,6 +36,7 @@ type Config struct {
 	Http    HttpConfig
 	DB      *DBConfig
 	Auth    AuthConfig
+	Accrual AccrualConfig
 	ToClose map[string]io.WriteCloser
 }
 
@@ -38,22 +59,25 @@ type JWTConfig struct {
 }
 
 type HttpConfig struct {
-	Port           string        `mapstructure:"port"`
+	Port           string        `mapstructure:"port" env:"RUN_ADDRESS"`
 	MaxHeaderBytes int           `mapstructure:"maxHeaderBytes"`
 	ReadTimeout    time.Duration `mapstructure:"readTimeout"`
 	WriteTimeout   time.Duration `mapstructure:"writeTimeout"`
 }
 
 type DBConfig struct {
-	Host     string `mapstructure:"host"`
-	Port     string `mapstructure:"port"`
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
-	DBName   string `mapstructure:"name"`
-	SSLMode  string `mapstructure:"mode"`
+	DSN string `mapstructure:"dsn" env:"DATABASE_URI"`
+}
+
+type AccrualConfig struct {
+	Address string `mapstructure:"address" env:"ACCRUAL_SYSTEM_ADDRESS"`
 }
 
 func NewConfig(cfgPath string) (Config, error) {
+	// setting up viper with the default config options
+	setDefaults()
+
+	// loading the config based on the APP_ENV
 	if err := loadConfig(cfgPath); err != nil {
 		return Config{}, err
 	}
@@ -66,21 +90,32 @@ func NewConfig(cfgPath string) (Config, error) {
 		return Config{}, err
 	}
 
-	margeInEnvConfig(&cfg)
+	// overwrites the static config options with dynamically passed env vars
+	if err := overwriteStaticConfig(&cfg); err != nil {
+		return Config{}, err
+	}
 
 	logFile, err := getLoggerFile(cfg.Logger.Destination, cfg.Logger.Channel)
 	if err != nil {
-		return Config{}, nil
+		if errors.Is(err, logger.ErrDestinationNotFound) {
+			logFile = os.Stdout
+		} else {
+			return Config{}, nil
+		}
 	}
 
 	logger.Init(logFile, cfg.Logger.Level)
 
-	// pushing usef files so they can be closed on app shut down
+	// pushing used files so they can be closed on app shut down
 	cfg.ToClose["logger"] = logFile
 	return cfg, nil
 }
 
 func getLoggerFile(destination, channel string) (*os.File, error) {
+	if destination == "" {
+		return nil, logger.ErrDestinationNotFound
+	}
+
 	loggerFileNmae := logger.DefaultLoggerFileName
 
 	if channel == logger.DailyChanne {
@@ -107,6 +142,10 @@ func unmarshal(cfg *Config) error {
 		return err
 	}
 
+	if err := viper.UnmarshalKey("accrual", &cfg.Accrual); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -117,9 +156,52 @@ func loadConfig(cfgPath string) error {
 	return viper.ReadInConfig()
 }
 
-func margeInEnvConfig(cfg *Config) {
+func overwriteStaticConfig(cfg *Config) error {
 	cfg.Auth.PasswordSalt = os.Getenv("PASSWORD_SALT")
 	cfg.Auth.JWT.SigningKey = os.Getenv("JWT_SIGNING_KEY")
+
+	flag.StringVar(&cfg.DB.DSN, "d", cfg.DB.DSN, "Database DSN")
+	flag.StringVar(&cfg.Http.Port, "a", cfg.Http.Port, "HTTP server address")
+	flag.StringVar(&cfg.Accrual.Address, "r", cfg.Accrual.Address, "Accrual system address")
+	flag.Parse()
+	
+	if err := env.Parse(cfg); err != nil {
+		return fmt.Errorf("failed to load environment variables: %w", err)
+	}
+
+	if envPort := os.Getenv("RUN_ADDRESS"); envPort != "" {
+		cfg.Http.Port = envPort
+	}
+
+	if envDB := os.Getenv("DATABASE_URI"); envDB != "" {
+		cfg.DB.DSN = envDB
+	}
+
+	if envAccrual := os.Getenv("ACCRUAL_SYSTEM_ADDRESS"); envAccrual != "" {
+		cfg.Accrual.Address = envAccrual
+	}
+
+	return nil
+}
+
+func setDefaults() {
+	// logger related defaults
+	viper.SetDefault("logger.level", defaultLoggerlevel)
+	viper.SetDefault("logger.destination", defaultLoggerDestination)
+	viper.SetDefault("logger.channel", defaultLoggerChannel)
+
+	// http server related defaults
+	viper.SetDefault("http.port", defaultHttpPort)
+	viper.SetDefault("http.maxHeaderBytes", defaultHttpMaxHeaderBytes)
+	viper.SetDefault("http.readTimeout", defaultHttpReadTimeout)
+	viper.SetDefault("http.writeTimeout", defaultHttpWriteTimeout)
+
+	// auth related defaults
+	viper.SetDefault("auth.accessTokenTTL", defaultJWTAccessTokenTTL)
+	viper.SetDefault("auth.refreshTokenTTL", defaultJWTRefreshTokenTTL)
+
+	// accrual sys defaults
+	viper.SetDefault("accrual.address", defaultAccrualSysAddress)
 }
 
 func init() {

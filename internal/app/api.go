@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"io"
 	"log"
 	"log/slog"
 	"net/http"
@@ -76,10 +77,16 @@ func Run(configPath string) error {
 	logger.Log.Info("Server exiting, closing the log files")
 
 	for domainKey, wc := range cfg.ToClose {
-		if err := wc.Close(); err != nil {
-			log.Printf("failed to close %s file\n", domainKey)
+		// check to ensure only io.Coser records are closed
+		if closer, ok := wc.(io.Closer); ok {
+			if err := closer.Close(); err != nil {
+				log.Printf("failed to close %s file: %v\n", domainKey, err)
+			} else {
+				log.Printf("successfully closed %s file\n", domainKey)
+			}
+		} else {
+			log.Printf("%s does not implement io.Closer, skipping\n", domainKey)
 		}
-		log.Printf("successfully closed %s file\n", domainKey)
 	}
 
 	return nil

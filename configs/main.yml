@@ -6,20 +6,15 @@ logger:
   channel: "daily"
 
 http:
-  port: 8080
+  port: ":8080"
   maxHeaderBytes: 1
-  readTimeout: 10s
-  writeTimeout: 10s
+  readTimeout: "10s"
+  writeTimeout: "10s"
 
 db:
-  host: localhost
-  port: 5432
-  username: admin
-  password: admin
-  name: db
-  mode: "disable"
+  dsn: "postgres://admin:admin@localhost:5432/db?sslmode=disable"
 
 auth:
   accessTokenTTL: 2h
   refreshTokenTTL: 720h #30 days
-  verificationCodeLength: 8
+

@@ -11,11 +11,7 @@ import (
 )
 
 func NewPostgresDB(ctx context.Context, cfg config.DBConfig) (*sqlx.DB, error) {
-	dsn := fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=%s password=%s connect_timeout=3",
-		cfg.Host, cfg.Port, cfg.Username, cfg.DBName, cfg.SSLMode, cfg.Password,
-	)
-
-	db, err := sqlx.ConnectContext(ctx, "postgres", dsn)
+	db, err := sqlx.ConnectContext(ctx, "postgres", cfg.DSN)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			return nil, fmt.Errorf("database connection timeout: %w", err)

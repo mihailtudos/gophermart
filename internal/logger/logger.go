@@ -2,6 +2,7 @@ package logger
 
 import (
 	"context"
+	"errors"
 	"io"
 	"log/slog"
 	"strings"
@@ -13,7 +14,10 @@ const (
 	StackChanne           = "stack"
 )
 
-var Log *slog.Logger
+var (
+	ErrDestinationNotFound = errors.New("destination not provided")
+	Log                    *slog.Logger
+)
 
 func Init(destination io.Writer, l string) {
 	Log = slog.New(slog.NewJSONHandler(destination, &slog.HandlerOptions{

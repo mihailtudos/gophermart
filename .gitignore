@@ -25,3 +25,5 @@ vendor/
 /api/logs
 
 /build
+
+.env
