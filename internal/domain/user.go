@@ -12,7 +12,7 @@ var ErrInvalidHash = errors.New("invalid hash")
 
 type User struct {
 	ID        int       `json:"id,omitempty"`
-	Email     string    `json:"email"`
+	Login     string    `json:"login"`
 	Password  password  `json:"-"`
 	Version   int       `json:"-"`
 	CreatedAt time.Time `json:"created_at,omitempty"`

@@ -17,7 +17,7 @@ var migrations embed.FS
 
 type UserRepo interface {
 	Create(ctx context.Context, user domain.User) (int, error)
-	GetUserByEmail(ctx context.Context, email string) (domain.User, error)
+	GetUserByLogin(ctx context.Context, login string) (domain.User, error)
 	GetUserByID(ctx context.Context, id int) (domain.User, error)
 	SetSessionToken(ctx context.Context, st domain.Session) error
 	RegisterOrder(ctx context.Context, st domain.Order) (int, error)

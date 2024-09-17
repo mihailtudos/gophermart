@@ -44,7 +44,7 @@ func (uh *userHandler) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := domain.User{Email: input.Login}
+	user := domain.User{Login: input.Login}
 	user.Password.Set(input.Password)
 
 	v := validator.New()
@@ -101,7 +101,7 @@ func (uh *userHandler) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := domain.User{Email: input.Login}
+	user := domain.User{Login: input.Login}
 	user.Password.Set(input.Password)
 
 	v := validator.New()
@@ -113,8 +113,8 @@ func (uh *userHandler) register(w http.ResponseWriter, r *http.Request) {
 
 	userID, err := uh.service.Register(r.Context(), user)
 	if err != nil {
-		if errors.Is(err, postgres.ErrDuplicateEmail) {
-			ErrorResponse(w, r, http.StatusConflict, "email has been taken")
+		if errors.Is(err, postgres.ErrDuplicateLogin) {
+			ErrorResponse(w, r, http.StatusConflict, "login has been taken")
 			return
 		}
 

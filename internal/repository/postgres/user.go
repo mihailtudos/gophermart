@@ -23,16 +23,16 @@ func NewUserRepository(db *sqlx.DB) (*userRepository, error) {
 
 func (u *userRepository) Create(ctx context.Context, user domain.User) (int, error) {
 	stmt := `
-		INSERT INTO users (email, password_hash)
+		INSERT INTO users (login, password_hash)
 		VALUES($1, $2)
 		RETURNING id
 	`
 
-	row := u.db.QueryRowContext(ctx, stmt, user.Email, user.Password.Hash)
+	row := u.db.QueryRowContext(ctx, stmt, user.Login, user.Password.Hash)
 	if err := row.Err(); err != nil {
 		switch {
-		case err.Error() == `pq: duplicate key value violates unique constraint "users_email_key"`:
-			return 0, ErrDuplicateEmail
+		case err.Error() == `pq: duplicate key value violates unique constraint "users_login_key"`:
+			return 0, ErrDuplicateLogin
 		default:
 			return 0, err
 		}
@@ -70,13 +70,13 @@ func (u *userRepository) SetSessionToken(ctx context.Context, st domain.Session)
 	return nil
 }
 
-func (u *userRepository) GetUserByEmail(ctx context.Context, email string) (domain.User, error) {
+func (u *userRepository) GetUserByLogin(ctx context.Context, login string) (domain.User, error) {
 	stmt := `
-		SELECT id, email, password_hash, created_at, version
+		SELECT id, login, password_hash, created_at, version
 		FROM users
-		WHERE email = $1
+		WHERE login = $1
 	`
-	row := u.db.QueryRowContext(ctx, stmt, email)
+	row := u.db.QueryRowContext(ctx, stmt, login)
 	if err := row.Err(); err != nil {
 		return domain.User{}, err
 	}
@@ -85,7 +85,7 @@ func (u *userRepository) GetUserByEmail(ctx context.Context, email string) (doma
 
 	err := row.Scan(
 		&user.ID,
-		&user.Email,
+		&user.Login,
 		&user.Password.Hash,
 		&user.CreatedAt,
 		&user.Version)
@@ -104,7 +104,7 @@ func (u *userRepository) GetUserByEmail(ctx context.Context, email string) (doma
 
 func (u *userRepository) GetUserByID(ctx context.Context, id int) (domain.User, error) {
 	stmt := `
-		SELECT id, email, version, created_at, updated_at
+		SELECT id, login, version, created_at, updated_at
 		FROM users
 		WHERE id = $1
 	`
@@ -118,7 +118,7 @@ func (u *userRepository) GetUserByID(ctx context.Context, id int) (domain.User, 
 
 	err := row.Scan(
 		&user.ID,
-		&user.Email,
+		&user.Login,
 		&user.Version,
 		&user.CreatedAt,
 		&user.UpdatedAt,

@@ -43,7 +43,7 @@ func (u *userService) SetSessionToken(ctx context.Context, userID int, token str
 }
 
 func (u *userService) Login(ctx context.Context, input auth.UserAuthInput) (domain.User, error) {
-	user, err := u.repo.GetUserByEmail(ctx, input.Login)
+	user, err := u.repo.GetUserByLogin(ctx, input.Login)
 	if err != nil {
 		return domain.User{}, err
 	}
@@ -73,8 +73,8 @@ func (u *userService) GenerateUserTokens(ctx context.Context, userID int) (auth.
 	}, nil
 }
 
-func (u *userService) GetUserByEmail(ctx context.Context, email string) (domain.User, error) {
-	return u.repo.GetUserByEmail(ctx, email)
+func (u *userService) GetUserByLogin(ctx context.Context, login string) (domain.User, error) {
+	return u.repo.GetUserByLogin(ctx, login)
 }
 
 func (u *userService) GetUserByID(ctx context.Context, userID int) (domain.User, error) {

@@ -16,7 +16,7 @@ type UserService interface {
 	GenerateUserTokens(ctx context.Context, userID int) (auth.Tokens, error)
 	SetSessionToken(ctx context.Context, userID int, token string) error
 	RefreshTokens(ctx context.Context, refreshToken string) (auth.Tokens, error)
-	GetUserByEmail(ctx context.Context, email string) (domain.User, error)
+	GetUserByLogin(ctx context.Context, login string) (domain.User, error)
 	GetUserByID(ctx context.Context, userID int) (domain.User, error)
 	VerifyToken(ctx context.Context, token string) (int, error)
 	RegisterOrder(ctx context.Context, orderNumber string, userID int) (int, error)
