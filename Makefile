@@ -16,7 +16,7 @@ migrate/down:
 build/gophermart:
 	cd cmd/gophermart && go build -buildvcs=false -o gophermart && cd ../..
 
-autotest/run: build/gophermart
+run/autotest: build/gophermart
 	gophermarttest \
     -test.v -test.run=^TestGophermart$ \
     -gophermart-binary-path=cmd/gophermart/gophermart \
