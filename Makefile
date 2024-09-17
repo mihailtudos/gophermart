@@ -28,7 +28,10 @@ run/autotest: build/gophermart
     -accrual-port=8000 \
     -accrual-database-uri="postgres://admin:admin@localhost:5432/db?sslmode=disable"
 
-.PHONY: run/gophermart, run/db, migrate/up, migrate/down, run/accrual, build/gophermart, autotest/run
+run/statictest:
+	go vet -vettool=/usr/local/bin/statictest ./...
+
+.PHONY: run/gophermart, run/db, migrate/up, migrate/down, run/accrual, build/gophermart, autotest/run, run/statictest
 
 
 GOLANGCI_LINT_CACHE?=/tmp/praktikum-golangci-lint-cache

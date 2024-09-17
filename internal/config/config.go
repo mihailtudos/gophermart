@@ -20,10 +20,10 @@ const (
 	defaultLoggerDestination = ""
 	defaultLoggerChannel     = "stack"
 
-	defaultHttpPort           = ":8080"
-	defaultHttpMaxHeaderBytes = 1
-	defaultHttpReadTimeout    = "10s"
-	defaultHttpWriteTimeout   = "10s"
+	defaultHTTPPort           = ":8080"
+	defaultHTTPMaxHeaderBytes = 1
+	defaultHTTPReadTimeout    = "10s"
+	defaultHTTPWriteTimeout   = "10s"
 
 	defaultJWTAccessTokenTTL  = "2h"
 	defaultJWTRefreshTokenTTL = "720h"
@@ -33,7 +33,7 @@ const (
 
 type Config struct {
 	Logger  LoggerConfig
-	Http    HttpConfig
+	HTTP    HTTPConfig
 	DB      *DBConfig
 	Auth    AuthConfig
 	Accrual AccrualConfig
@@ -58,7 +58,7 @@ type JWTConfig struct {
 	SigningKey      string
 }
 
-type HttpConfig struct {
+type HTTPConfig struct {
 	Port           string        `mapstructure:"port" env:"RUN_ADDRESS"`
 	MaxHeaderBytes int           `mapstructure:"maxHeaderBytes"`
 	ReadTimeout    time.Duration `mapstructure:"readTimeout"`
@@ -130,7 +130,7 @@ func unmarshal(cfg *Config) error {
 		return err
 	}
 
-	if err := viper.UnmarshalKey("http", &cfg.Http); err != nil {
+	if err := viper.UnmarshalKey("http", &cfg.HTTP); err != nil {
 		return err
 	}
 
@@ -161,16 +161,16 @@ func overwriteStaticConfig(cfg *Config) error {
 	cfg.Auth.JWT.SigningKey = os.Getenv("JWT_SIGNING_KEY")
 
 	flag.StringVar(&cfg.DB.DSN, "d", cfg.DB.DSN, "Database DSN")
-	flag.StringVar(&cfg.Http.Port, "a", cfg.Http.Port, "HTTP server address")
+	flag.StringVar(&cfg.HTTP.Port, "a", cfg.HTTP.Port, "HTTP server address")
 	flag.StringVar(&cfg.Accrual.Address, "r", cfg.Accrual.Address, "Accrual system address")
 	flag.Parse()
-	
+
 	if err := env.Parse(cfg); err != nil {
 		return fmt.Errorf("failed to load environment variables: %w", err)
 	}
 
 	if envPort := os.Getenv("RUN_ADDRESS"); envPort != "" {
-		cfg.Http.Port = envPort
+		cfg.HTTP.Port = envPort
 	}
 
 	if envDB := os.Getenv("DATABASE_URI"); envDB != "" {
@@ -191,10 +191,10 @@ func setDefaults() {
 	viper.SetDefault("logger.channel", defaultLoggerChannel)
 
 	// http server related defaults
-	viper.SetDefault("http.port", defaultHttpPort)
-	viper.SetDefault("http.maxHeaderBytes", defaultHttpMaxHeaderBytes)
-	viper.SetDefault("http.readTimeout", defaultHttpReadTimeout)
-	viper.SetDefault("http.writeTimeout", defaultHttpWriteTimeout)
+	viper.SetDefault("http.port", defaultHTTPPort)
+	viper.SetDefault("http.maxHeaderBytes", defaultHTTPMaxHeaderBytes)
+	viper.SetDefault("http.readTimeout", defaultHTTPReadTimeout)
+	viper.SetDefault("http.writeTimeout", defaultHTTPWriteTimeout)
 
 	// auth related defaults
 	viper.SetDefault("auth.accessTokenTTL", defaultJWTAccessTokenTTL)

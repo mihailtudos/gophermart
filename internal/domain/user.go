@@ -11,12 +11,12 @@ import (
 var ErrInvalidHash = errors.New("invalid hash")
 
 type User struct {
-	ID         int       `json:"id,omitempty"`
-	Email      string    `json:"email"`
-	Password   password  `json:"-"`
-	Version    int       `json:"-"`
-	Created_at time.Time `json:"created_at,omitempty"`
-	Updated_at time.Time `json:"updated_at,omitempty"`
+	ID        int       `json:"id,omitempty"`
+	Email     string    `json:"email"`
+	Password  password  `json:"-"`
+	Version   int       `json:"-"`
+	CreatedAt time.Time `json:"created_at,omitempty"`
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
 }
 
 type password struct {

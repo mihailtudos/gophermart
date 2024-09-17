@@ -111,7 +111,7 @@ func (uh *userHandler) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userId, err := uh.service.Register(r.Context(), user)
+	userID, err := uh.service.Register(r.Context(), user)
 	if err != nil {
 		if errors.Is(err, postgres.ErrDuplicateEmail) {
 			ErrorResponse(w, r, http.StatusConflict, "email has been taken")
@@ -123,14 +123,14 @@ func (uh *userHandler) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokens, err := uh.service.GenerateUserTokens(r.Context(), userId)
+	tokens, err := uh.service.GenerateUserTokens(r.Context(), userID)
 	if err != nil {
 		ServerErrorResponse(w, r,
 			fmt.Errorf("failed to generate user tokens: %w", err))
 		return
 	}
 
-	if err := uh.service.SetSessionToken(r.Context(), userId, tokens.RefreshToken); err != nil {
+	if err := uh.service.SetSessionToken(r.Context(), userID, tokens.RefreshToken); err != nil {
 		ServerErrorResponse(w, r,
 			fmt.Errorf("failed to set user session: %w", err))
 		return

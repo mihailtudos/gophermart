@@ -34,14 +34,14 @@ func NewManager(cfg config.JWTConfig) (*Manager, error) {
 	return &Manager{jwtCfg: cfg}, nil
 }
 
-func (m *Manager) NewJWT(userId string, ttl *time.Duration) (string, error) {
+func (m *Manager) NewJWT(userID string, ttl *time.Duration) (string, error) {
 	if ttl == nil {
 		ttl = &m.jwtCfg.AccessTokenTTL
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
 		ExpiresAt: time.Now().Add(*ttl).Unix(),
-		Subject:   userId,
+		Subject:   userID,
 	})
 
 	return token.SignedString([]byte(m.jwtCfg.SigningKey))

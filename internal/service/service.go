@@ -19,7 +19,7 @@ type UserService interface {
 	GetUserByEmail(ctx context.Context, email string) (domain.User, error)
 	GetUserByID(ctx context.Context, userID int) (domain.User, error)
 	VerifyToken(ctx context.Context, token string) (int, error)
-	RegisterOrder(ctx context.Context, orderNumber string, userId int) (int, error)
+	RegisterOrder(ctx context.Context, orderNumber string, userID int) (int, error)
 	GetUserOrders(ctx context.Context, userID int) ([]domain.Order, error)
 }
 
@@ -28,10 +28,10 @@ type OrderService interface {
 }
 
 type TokenManager interface {
-	NewJWT(userId string, ttl *time.Duration) (string, error)
+	NewJWT(userID string, ttl *time.Duration) (string, error)
 	Parse(accessToken string) (string, error)
 	NewRefreshToken() (string, error)
-	CreateSession(userId int, token string) (domain.Session, error)
+	CreateSession(userID int, token string) (domain.Session, error)
 }
 
 type Services struct {

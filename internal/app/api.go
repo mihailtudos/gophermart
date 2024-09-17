@@ -53,7 +53,7 @@ func Run(configPath string) error {
 		}
 	}()
 
-	logger.Log.Info("starting server at port: " + cfg.Http.Port)
+	logger.Log.Info("starting server at port: " + cfg.HTTP.Port)
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 	<-quit

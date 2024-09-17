@@ -24,13 +24,13 @@ func NewUserService(repo repository.UserRepo,
 }
 
 func (u *userService) Register(ctx context.Context, user domain.User) (int, error) {
-	userId, err := u.repo.Create(ctx, user)
+	userID, err := u.repo.Create(ctx, user)
 
 	if err != nil {
 		return 0, err
 	}
 
-	return userId, nil
+	return userID, nil
 }
 
 func (u *userService) SetSessionToken(ctx context.Context, userID int, token string) error {
@@ -78,16 +78,16 @@ func (u *userService) GetUserByEmail(ctx context.Context, email string) (domain.
 }
 
 func (u *userService) GetUserByID(ctx context.Context, userID int) (domain.User, error) {
-	return u.repo.GetUserById(ctx, userID)
+	return u.repo.GetUserByID(ctx, userID)
 }
 
 func (u *userService) VerifyToken(ctx context.Context, token string) (int, error) {
-	userId, err := u.tokenManager.Parse(token)
+	userID, err := u.tokenManager.Parse(token)
 	if err != nil {
 		return 0, err
 	}
 
-	id, err := strconv.Atoi(userId)
+	id, err := strconv.Atoi(userID)
 	if err != nil {
 		return 0, fmt.Errorf("invalid user id %w", err)
 	}

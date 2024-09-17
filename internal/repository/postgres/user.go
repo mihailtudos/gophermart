@@ -87,7 +87,7 @@ func (u *userRepository) GetUserByEmail(ctx context.Context, email string) (doma
 		&user.ID,
 		&user.Email,
 		&user.Password.Hash,
-		&user.Created_at,
+		&user.CreatedAt,
 		&user.Version)
 
 	if err != nil {
@@ -102,7 +102,7 @@ func (u *userRepository) GetUserByEmail(ctx context.Context, email string) (doma
 	return user, nil
 }
 
-func (u *userRepository) GetUserById(ctx context.Context, id int) (domain.User, error) {
+func (u *userRepository) GetUserByID(ctx context.Context, id int) (domain.User, error) {
 	stmt := `
 		SELECT id, email, version, created_at, updated_at
 		FROM users
@@ -120,8 +120,8 @@ func (u *userRepository) GetUserById(ctx context.Context, id int) (domain.User, 
 		&user.ID,
 		&user.Email,
 		&user.Version,
-		&user.Created_at,
-		&user.Updated_at,
+		&user.CreatedAt,
+		&user.UpdatedAt,
 	)
 
 	if err != nil {
