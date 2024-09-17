@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"time"
@@ -8,7 +10,6 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/mihailtudos/gophermart/internal/config"
 	"github.com/mihailtudos/gophermart/internal/domain"
-	"golang.org/x/exp/rand"
 )
 
 var (
@@ -80,14 +81,11 @@ func (m *Manager) Parse(accessToken string) (string, error) {
 func (m *Manager) NewRefreshToken() (string, error) {
 	b := make([]byte, 32)
 
-	s := rand.NewSource(uint64(time.Now().Unix()))
-	r := rand.New(s)
-
-	if _, err := r.Read(b); err != nil {
+	if _, err := rand.Read(b); err != nil {
 		return "", err
 	}
 
-	return fmt.Sprintf("%x", b), nil
+	return hex.EncodeToString(b), nil
 }
 
 func (m *Manager) CreateSession(userID int, token string) (domain.Session, error) {
