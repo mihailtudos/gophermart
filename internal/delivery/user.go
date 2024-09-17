@@ -68,15 +68,18 @@ func (uh *userHandler) login(w http.ResponseWriter, r *http.Request) {
 	tokens, err := uh.service.GenerateUserTokens(r.Context(), user.ID)
 	if err != nil {
 		ServerErrorResponse(w, r,
-			fmt.Errorf("filed to generate user tokens: %w", err))
+			fmt.Errorf("failed to generate user tokens: %w", err))
 		return
 	}
 
 	if err := uh.service.SetSessionToken(r.Context(), user.ID, tokens.RefreshToken); err != nil {
 		ServerErrorResponse(w, r,
-			fmt.Errorf("filed to set user session: %w", err))
+			fmt.Errorf("failed to set user session: %w", err))
 		return
 	}
+
+	// Set the Authorization header
+	helpers.SetAuthorizationHeaders(w, tokens)
 
 	err = helpers.WriteJSON(w, http.StatusOK,
 		helpers.Envelope{
@@ -87,7 +90,7 @@ func (uh *userHandler) login(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		ServerErrorResponse(w, r,
-			fmt.Errorf("filed to generate user tokens: %w", err))
+			fmt.Errorf("failed to write JSON response: %w", err))
 	}
 }
 
@@ -116,23 +119,27 @@ func (uh *userHandler) register(w http.ResponseWriter, r *http.Request) {
 		}
 
 		ServerErrorResponse(w, r,
-			fmt.Errorf("filed to register new user: %w", err))
+			fmt.Errorf("failed to register new user: %w", err))
 		return
 	}
 
 	tokens, err := uh.service.GenerateUserTokens(r.Context(), userId)
 	if err != nil {
 		ServerErrorResponse(w, r,
-			fmt.Errorf("filed to generate user tokens: %w", err))
+			fmt.Errorf("failed to generate user tokens: %w", err))
 		return
 	}
 
 	if err := uh.service.SetSessionToken(r.Context(), userId, tokens.RefreshToken); err != nil {
 		ServerErrorResponse(w, r,
-			fmt.Errorf("filed to set user session: %w", err))
+			fmt.Errorf("failed to set user session: %w", err))
 		return
 	}
 
+	// Setting auth headers
+	helpers.SetAuthorizationHeaders(w, tokens)
+
+	// Respond with the tokens in the JSON body
 	err = helpers.WriteJSON(w, http.StatusOK,
 		helpers.Envelope{
 			"access_token":  tokens.AccessToken,
@@ -142,7 +149,7 @@ func (uh *userHandler) register(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		ServerErrorResponse(w, r,
-			fmt.Errorf("filed to generate user tokens: %w", err))
+			fmt.Errorf("failed to write JSON response: %w", err))
 	}
 }
 

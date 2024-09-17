@@ -6,9 +6,25 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/mihailtudos/gophermart/internal/service/auth"
 )
 
 type Envelope map[string]any
+
+func SetAuthorizationHeaders(w http.ResponseWriter, tokens auth.Tokens) {
+	// Set the Authorization header with the access token
+	w.Header().Set("Authorization", fmt.Sprintf("Bearer %s", tokens.AccessToken))
+
+	// Set the refresh token as a secure HTTP-only cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    tokens.RefreshToken,
+		HttpOnly: true, // Prevents access by JavaScript
+		Secure:   true, // Ensures it is only sent over HTTPS
+		Path:     "/",
+	})
+}
 
 func WriteJSON(w http.ResponseWriter, status int, data Envelope, headers http.Header) error {
 	js, err := json.MarshalIndent(data, "", "\t")
