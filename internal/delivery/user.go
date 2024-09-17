@@ -44,7 +44,7 @@ func (uh *userHandler) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := domain.User{Email: input.Email}
+	user := domain.User{Email: input.Login}
 	user.Password.Set(input.Password)
 
 	v := validator.New()
@@ -98,7 +98,7 @@ func (uh *userHandler) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := domain.User{Email: input.Email}
+	user := domain.User{Email: input.Login}
 	user.Password.Set(input.Password)
 
 	v := validator.New()

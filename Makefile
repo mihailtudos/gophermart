@@ -13,7 +13,22 @@ migrate/up:
 migrate/down:
 	goose -dir db/migrations postgres "postgres://admin:admin@localhost:5432/db?sslmode=disable" down
 
-.PHONY: run/gophermart, run/db, migrate/up, migrate/down, run/accrual
+build/gophermart:
+	cd cmd/gophermart && go build -buildvcs=false -o gophermart && cd ../..
+
+autotest/run: build/gophermart
+	gophermarttest \
+    -test.v -test.run=^TestGophermart$ \
+    -gophermart-binary-path=cmd/gophermart/gophermart \
+    -gophermart-host=localhost \
+    -gophermart-port=8080 \
+    -gophermart-database-uri="postgres://admin:admin@localhost:5432/db?sslmode=disable" \
+    -accrual-binary-path=cmd/accrual/accrual_darwin_arm64 \
+    -accrual-host=localhost \
+    -accrual-port=8000 \
+    -accrual-database-uri="postgres://admin:admin@localhost:5432/db?sslmode=disable"
+
+.PHONY: run/gophermart, run/db, migrate/up, migrate/down, run/accrual, build/gophermart, autotest/run
 
 
 GOLANGCI_LINT_CACHE?=/tmp/praktikum-golangci-lint-cache

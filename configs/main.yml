@@ -2,7 +2,7 @@ env: local
 
 logger:
   level: "info"
-  destination: "./api/logs/local"
+  destination: ""
   channel: "daily"
 
 http:
