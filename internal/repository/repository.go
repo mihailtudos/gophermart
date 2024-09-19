@@ -26,7 +26,7 @@ type BalanceHandler interface {
 
 type OrdersHandler interface {
 	RegisterOrder(ctx context.Context, order domain.Order) (domain.Order, error)
-	GetUserOrders(ctx context.Context, userID int) ([]domain.Order, error)
+	GetUserOrders(ctx context.Context, userID int) ([]domain.UserOrder, error)
 	GetUnfinishedOrders(ctx context.Context) ([]domain.Order, error)
 	UpdateOrder(ctx context.Context, updatedOrder domain.Order) error
 }
@@ -36,7 +36,6 @@ type UserRepo interface {
 	GetUserByLogin(ctx context.Context, login string) (domain.User, error)
 	GetUserByID(ctx context.Context, id int) (domain.User, error)
 	SetSessionToken(ctx context.Context, st domain.Session) error
-	GetUserOrders(ctx context.Context, userID int) ([]domain.Order, error)
 	UserBalance
 	BalanceHandler
 	OrdersHandler

@@ -209,7 +209,7 @@ func (u *userRepository) RegisterOrder(ctx context.Context, order domain.Order) 
 	return insertedOrder, nil
 }
 
-func (u *userRepository) GetUserOrders(ctx context.Context, userID int) ([]domain.Order, error) {
+func (u *userRepository) GetUserOrders(ctx context.Context, userID int) ([]domain.UserOrder, error) {
 	rows, err := u.db.QueryContext(ctx, queries.GetUserOrders, userID)
 	if err != nil {
 		return nil, err
@@ -217,15 +217,15 @@ func (u *userRepository) GetUserOrders(ctx context.Context, userID int) ([]domai
 
 	defer rows.Close()
 
-	var orders []domain.Order
+	var orders []domain.UserOrder
 	for rows.Next() {
 		var createdAt time.Time
-		order := domain.Order{}
+		order := domain.UserOrder{}
 
 		err := rows.Scan(
-			&order.OrderNumber,
+			&order.Number,
 			&createdAt,
-			&order.OrderStatus,
+			&order.Status,
 			&order.Accrual,
 		)
 
@@ -395,7 +395,6 @@ func (u *userRepository) GetUnfinishedOrders(ctx context.Context) ([]domain.Orde
 }
 
 func (u *userRepository) UpdateOrder(ctx context.Context, order domain.Order) error {
-	fmt.Println("start")
 	tx, err := u.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
@@ -407,7 +406,6 @@ func (u *userRepository) UpdateOrder(ctx context.Context, order domain.Order) er
 		}
 	}()
 
-	fmt.Println("updaging to ", order.OrderStatus, order.Accrual, order.OrderNumber)
 	res, err := tx.ExecContext(ctx, queries.UpdateOrderStatusAndAccrualPoints,
 		order.OrderStatus, order.Accrual, order.OrderNumber)
 

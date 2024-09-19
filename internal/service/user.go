@@ -99,7 +99,7 @@ func (u *userService) RegisterOrder(ctx context.Context, order domain.Order) (do
 	return u.repo.RegisterOrder(ctx, order)
 }
 
-func (u *userService) GetUserOrders(ctx context.Context, userID int) ([]domain.Order, error) {
+func (u *userService) GetUserOrders(ctx context.Context, userID int) ([]domain.UserOrder, error) {
 	return u.repo.GetUserOrders(ctx, userID)
 }
 
