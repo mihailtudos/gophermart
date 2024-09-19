@@ -15,13 +15,31 @@ import (
 //go:embed db/migrations/*.sql
 var migrations embed.FS
 
+type UserBalance interface {
+	GetUserBalance(ctx context.Context, userID int) (domain.UserBalance, error)
+}
+
+type BalanceHandler interface {
+	WithdrawalPoints(ctx context.Context, wp domain.Withdrawal) (string, error)
+	GetWithdrawals(ctx context.Context, userID int) ([]domain.Withdrawal, error)
+}
+
+type OrdersHandler interface {
+	RegisterOrder(ctx context.Context, order domain.Order) (int, error)
+	GetUserOrders(ctx context.Context, userID int) ([]domain.Order, error)
+	GetUnfinishedOrders(ctx context.Context) ([]domain.Order, error)
+	UpdateOrder(ctx context.Context, updatedOrder domain.Order) error
+}
+
 type UserRepo interface {
 	Create(ctx context.Context, user domain.User) (int, error)
 	GetUserByLogin(ctx context.Context, login string) (domain.User, error)
 	GetUserByID(ctx context.Context, id int) (domain.User, error)
 	SetSessionToken(ctx context.Context, st domain.Session) error
-	RegisterOrder(ctx context.Context, st domain.Order) (int, error)
 	GetUserOrders(ctx context.Context, userID int) ([]domain.Order, error)
+	UserBalance
+	BalanceHandler
+	OrdersHandler
 }
 
 type OrderRepo interface {

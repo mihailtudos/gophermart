@@ -2,7 +2,7 @@
 -- +goose StatementBegin
 CREATE TABLE IF NOT EXISTS session_tokens (
     id BIGSERIAL PRIMARY KEY,
-    user_id INT REFERENCES users(id),
+    user_id int NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     token TEXT UNIQUE NOT NULL,
     expires_at TIMESTAMP NOT NULL,
     created_at TIMESTAMP DEFAULT NOW(),

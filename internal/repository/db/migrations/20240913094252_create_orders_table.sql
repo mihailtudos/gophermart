@@ -2,7 +2,7 @@
 -- +goose StatementBegin
 CREATE TABLE IF NOT EXISTS orders (
     id BIGSERIAL PRIMARY KEY,
-    user_id INT REFERENCES users(id),
+    user_id int NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     number TEXT UNIQUE,
     status TEXT NOT NULL,
     accrual int DEFAULT 0,

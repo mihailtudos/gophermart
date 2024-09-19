@@ -95,16 +95,30 @@ func (u *userService) VerifyToken(ctx context.Context, token string) (int, error
 	return id, nil
 }
 
-func (u *userService) RegisterOrder(ctx context.Context, orderNumber string, userID int) (int, error) {
-	order := domain.Order{
-		Number: orderNumber,
-		UserID: userID,
-		Status: domain.NEW,
-	}
-
+func (u *userService) RegisterOrder(ctx context.Context, order domain.Order) (int, error) {
 	return u.repo.RegisterOrder(ctx, order)
 }
 
 func (u *userService) GetUserOrders(ctx context.Context, userID int) ([]domain.Order, error) {
 	return u.repo.GetUserOrders(ctx, userID)
+}
+
+func (u *userService) GetUserBalance(ctx context.Context, userID int) (domain.UserBalance, error) {
+	return u.repo.GetUserBalance(ctx, userID)
+}
+
+func (u *userService) WithdrawalPoints(ctx context.Context, wp domain.Withdrawal) (string, error) {
+	return u.repo.WithdrawalPoints(ctx, wp)
+}
+
+func (u *userService) GetWithdrawals(ctx context.Context, userID int) ([]domain.Withdrawal, error) {
+	return u.repo.GetWithdrawals(ctx, userID)
+}
+
+func (u *userService) GetUnfinishedOrders(ctx context.Context) ([]domain.Order, error) {
+	return u.repo.GetUnfinishedOrders(ctx)
+}
+
+func (u *userService) UpdateOrder(ctx context.Context, order domain.Order) error {
+	return u.repo.UpdateOrder(ctx, order)
 }

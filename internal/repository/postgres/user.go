@@ -9,6 +9,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/mihailtudos/gophermart/internal/domain"
+	"github.com/mihailtudos/gophermart/internal/repository/postgres/queries"
 )
 
 type userRepository struct {
@@ -22,28 +23,48 @@ func NewUserRepository(db *sqlx.DB) (*userRepository, error) {
 }
 
 func (u *userRepository) Create(ctx context.Context, user domain.User) (int, error) {
-	stmt := `
+	tx, err := u.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	userStmt := `
 		INSERT INTO users (login, password_hash)
 		VALUES($1, $2)
 		RETURNING id
 	`
 
-	row := u.db.QueryRowContext(ctx, stmt, user.Login, user.Password.Hash)
-	if err := row.Err(); err != nil {
-		switch {
-		case err.Error() == `pq: duplicate key value violates unique constraint "users_login_key"`:
+	var userID int
+	row := tx.QueryRowContext(ctx, userStmt, user.Login, user.Password.Hash)
+	if err = row.Scan(&userID); err != nil {
+		if err.Error() == `pq: duplicate key value violates unique constraint "users_login_key"` {
 			return 0, ErrDuplicateLogin
-		default:
-			return 0, err
 		}
-	}
-
-	var id int
-	if err := row.Scan(&id); err != nil {
 		return 0, err
 	}
 
-	return int(id), nil
+	loyaltyStmt := `
+		INSERT INTO user_loyalty_points (user_id)
+		VALUES ($1)
+	`
+
+	_, err = tx.ExecContext(ctx, loyaltyStmt, userID)
+
+	if err != nil {
+		return 0, err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return 0, err
+	}
+
+	return userID, nil
 }
 
 func (u *userRepository) SetSessionToken(ctx context.Context, st domain.Session) error {
@@ -154,7 +175,7 @@ func (u *userRepository) RegisterOrder(ctx context.Context, order domain.Order) 
 		}
 
 		if existingOrder.UserID == order.UserID {
-			if existingOrder.Status == domain.PROCESSING {
+			if existingOrder.Status == domain.ORDER_STATUS_PROCESSING {
 				return 0, ErrOrderAlreadyAccepted
 			}
 
@@ -218,4 +239,184 @@ func (u *userRepository) GetUserOrders(ctx context.Context, userID int) ([]domai
 	}
 
 	return orders, nil
+}
+
+func (u *userRepository) GetUserBalance(ctx context.Context, userID int) (domain.UserBalance, error) {
+	return u.getUserBalance(ctx, userID)
+}
+
+func (u *userRepository) WithdrawalPoints(ctx context.Context, wp domain.Withdrawal) (string, error) {
+	var id string
+
+	// Get the current user balance
+	balance, err := u.getUserBalance(ctx, wp.UserID)
+	if err != nil {
+		return id, err
+	}
+
+	// Check if the user has sufficient points
+	if balance.Current < wp.Sum {
+		return id, ErrInsufficientPoints
+	}
+
+	// Begin a transaction
+	tx, err := u.db.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return id, err
+	}
+
+	// Defer rollback in case of error, but avoid reusing the outer `err`
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	// Update the user's balance
+	balance.Withdrawn += wp.Sum
+	balance.Current -= wp.Sum
+
+	// Update the user balance in the database
+	_, err = tx.ExecContext(ctx, queries.UpdateUserBalance, balance.Current, balance.Withdrawn, wp.UserID)
+	if err != nil {
+		return id, err
+	}
+
+	// Create the withdrawal points record
+	err = tx.QueryRowContext(ctx, queries.CreateWithdrawalPointsRecord, wp.UserID, wp.Order, wp.Sum).Scan(&id)
+	if err != nil {
+		return id, err
+	}
+
+	// Commit the transaction
+	if err = tx.Commit(); err != nil {
+		return id, err
+	}
+
+	return id, nil
+}
+
+func (u *userRepository) getUserBalance(ctx context.Context, userID int) (domain.UserBalance, error) {
+	var balance domain.UserBalance
+
+	// Query the user's balance
+	row := u.db.QueryRowContext(ctx, queries.GetUserBalanceStmt, userID)
+
+	// Scan the result into the balance struct
+	if err := row.Scan(&balance.Current, &balance.Withdrawn); err != nil {
+		return balance, err
+	}
+
+	return balance, nil
+}
+
+func (u *userRepository) GetWithdrawals(ctx context.Context, userID int) ([]domain.Withdrawal, error) {
+	var withdrawals []domain.Withdrawal
+
+	// Replace 'queries.CreateWithdrawalPointsRecord' with the correct query for fetching withdrawals
+	rows, err := u.db.QueryContext(ctx, queries.GetUserWithdrawals, userID)
+	if err != nil {
+		return withdrawals, err
+	}
+	defer rows.Close()
+
+	// Iterate through the result set
+	for rows.Next() {
+		var withdrawal domain.Withdrawal
+		var createdAt time.Time
+
+		// Scan the row into the variables and check for errors
+		if err := rows.Scan(
+			&withdrawal.Order,
+			&withdrawal.Sum,
+			&createdAt,
+		); err != nil {
+			return withdrawals, err
+		}
+
+		// Format the timestamp and add the withdrawal to the slice
+		withdrawal.ProcessedAt = createdAt.Format(time.RFC3339)
+		withdrawals = append(withdrawals, withdrawal)
+	}
+
+	// Check for errors encountered during iteration
+	if err = rows.Err(); err != nil {
+		return withdrawals, err
+	}
+
+	return withdrawals, nil
+}
+
+func (u *userRepository) GetUnfinishedOrders(ctx context.Context) ([]domain.Order, error) {
+	var orders []domain.Order
+
+	tx, err := u.db.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return orders, err
+	}
+
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	rows, err := tx.QueryContext(ctx, queries.GetUnfinishedOrders, domain.ORDER_STATUS_NEW, domain.ORDER_STATUS_PROCESSED)
+
+	if err != nil {
+		return orders, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var order domain.Order
+		rows.Scan(
+			&order.Number,
+			&order.Status,
+			&order.Accrual)
+
+		orders = append(orders, order)
+	}
+
+	if err := rows.Err(); err != nil {
+		return orders, err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return orders, err
+	}
+
+	return orders, nil
+}
+
+func (u *userRepository) UpdateOrder(ctx context.Context, order domain.Order) error {
+	fmt.Println("start")
+	tx, err := u.db.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	fmt.Println("updaging to ", order.Status, order.Accrual, order.Number)
+	res, err := tx.ExecContext(ctx, queries.UpdateOrderStatusAndAccrualPoints,
+		order.Status, order.Accrual, order.Number)
+
+	if err != nil {
+		return err
+	}
+
+	afr, _ := res.RowsAffected()
+	fmt.Println("update order, rows affected ", afr)
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
 }

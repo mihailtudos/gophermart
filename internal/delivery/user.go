@@ -32,6 +32,9 @@ func NewUserHandler(us service.UserService) *chi.Mux {
 		r.Use(middleware.Authenticated(us))
 		r.Post("/orders", uh.registerOrder)
 		r.Get("/orders", uh.getOrders)
+		r.Get("/balance", uh.getBalance)
+		r.Post("/balance/withdraw", uh.withrawalPoints)
+		r.Get("/withdrawals", uh.getWithrawals)
 	})
 
 	return router
@@ -175,7 +178,13 @@ func (uh *userHandler) registerOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user := helpers.ContextGetUser(r)
-	_, err = uh.service.RegisterOrder(r.Context(), input, user.ID)
+	order := domain.Order{
+		Number: input,
+		UserID: user.ID,
+		Status: domain.ORDER_STATUS_NEW,
+	}
+
+	_, err = uh.service.RegisterOrder(r.Context(), order)
 
 	if err != nil {
 		switch {
@@ -194,7 +203,7 @@ func (uh *userHandler) registerOrder(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusAccepted)
 }
 
 func (uh *userHandler) getOrders(w http.ResponseWriter, r *http.Request) {
@@ -223,4 +232,65 @@ func (uh *userHandler) getOrders(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(js)
+}
+
+func (uh *userHandler) getBalance(w http.ResponseWriter, r *http.Request) {
+	user := helpers.ContextGetUser(r)
+
+	balance, err := uh.service.GetUserBalance(r.Context(), user.ID)
+	if err != nil {
+		ServerErrorResponse(w, r, err)
+		return
+	}
+
+	if err := helpers.WriteUnwrappedJSON(w, http.StatusOK, balance, nil); err != nil {
+		ServerErrorResponse(w, r, err)
+		return
+	}
+}
+
+func (uh *userHandler) withrawalPoints(w http.ResponseWriter, r *http.Request) {
+	user := helpers.ContextGetUser(r)
+	var withdrawalsRequest domain.Withdrawal
+	if err := helpers.ReadJSON(w, r, &withdrawalsRequest); err != nil {
+		ServerErrorResponse(w, r, err)
+		return
+	}
+
+	v := validator.New()
+
+	v.Check(validator.IsValidOrderNumber(withdrawalsRequest.Order), "order", "invalid order number")
+
+	if !v.Valid() {
+		FailedValidationResponse(w, r, v.Errors)
+		return
+	}
+	withdrawalsRequest.UserID = user.ID
+
+	_, err := uh.service.WithdrawalPoints(r.Context(), withdrawalsRequest)
+	if err != nil {
+		if errors.Is(err, postgres.ErrInsufficientPoints) {
+			ErrorResponse(w, r, http.StatusPaymentRequired, "insufficient points")
+			return
+		}
+
+		ServerErrorResponse(w, r, err)
+		return
+	}
+}
+
+func (uh *userHandler) getWithrawals(w http.ResponseWriter, r *http.Request) {
+	user := helpers.ContextGetUser(r)
+	withdrawals, err := uh.service.GetWithdrawals(r.Context(), user.ID)
+	if err != nil {
+		ServerErrorResponse(w, r, err)
+		return
+	}
+
+	if len(withdrawals) == 0 {
+		ErrorResponse(w, r, http.StatusNoContent, "no withdrawal records")
+		return
+	}
+
+	helpers.WriteUnwrappedJSON(w, http.StatusOK, withdrawals, nil)
 }

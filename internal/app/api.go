@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/mihailtudos/gophermart/internal/app/accrual"
 	"github.com/mihailtudos/gophermart/internal/config"
 	"github.com/mihailtudos/gophermart/internal/delivery"
 	"github.com/mihailtudos/gophermart/internal/logger"
@@ -26,8 +27,9 @@ func Run(configPath string) error {
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
+	// Create a context that will be canceled on shutdown signal
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel() // Ensure the cancel function is called
 
 	repos, err := repository.NewRepository(ctx, *cfg.DB)
 	if err != nil {
@@ -36,7 +38,15 @@ func Run(configPath string) error {
 		return err
 	}
 
-	ss, err := service.NewServices(repos, cfg.Auth)
+	accrualClient := accrual.New(cfg.Accrual.Address)
+	if accrualClient == nil || accrualClient.Address == "" {
+		return errors.New("failed to initialize accrual client")
+	}
+
+	ss, err := service.NewServices(repos, cfg.Auth, accrualClient)
+
+	// starting the backgorun process
+	ss.UpdateOrdersInBackground(ctx, 3*time.Second)
 
 	if err != nil {
 		logger.Log.ErrorContext(context.Background(), "failed to init services",
@@ -58,11 +68,14 @@ func Run(configPath string) error {
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 	<-quit
 
+	logger.Log.Info("shutting down server gracefully...")
+
+	// Trigger the context cancellation to stop the background process
+	cancel()
+
 	const timeout = 5 * time.Second
 	ctx, shutdown := context.WithTimeout(context.Background(), timeout)
 	defer shutdown()
-
-	logger.Log.Info("shutting down server gracefully...")
 
 	// stopping server
 	if err := srv.Stop(ctx); err != nil {
