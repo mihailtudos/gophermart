@@ -1,5 +1,5 @@
 run/gophermart:
-	go run ./cmd/gophermart/main.go
+	go run ./cmd/gophermart/main.go -d postgres://admin:admin@localhost:5432/db?sslmode=disable
 
 run/accrual:
 	./cmd/accrual/accrual_darwin_arm64 -a=:8000

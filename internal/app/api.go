@@ -3,8 +3,6 @@ package app
 import (
 	"context"
 	"errors"
-	"io"
-	"log"
 	"log/slog"
 	"net/http"
 	"os"
@@ -21,17 +19,15 @@ import (
 	"github.com/mihailtudos/gophermart/internal/service"
 )
 
-func Run(configPath string) error {
-	cfg, err := config.NewConfig(configPath)
-	if err != nil {
-		return err
-	}
-
+func Run() error {
+	cfg := config.Init()
+	logger.Init(nil, cfg.Logger.Level)
+	
 	// Create a context that will be canceled on shutdown signal
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel() // Ensure the cancel function is called
+	defer cancel()
 
-	repos, err := repository.NewRepository(ctx, *cfg.DB)
+	repos, err := repository.NewRepository(ctx, cfg.DB)
 	if err != nil {
 		logger.Log.ErrorContext(context.Background(), "failed to init repository",
 			slog.String("err", err.Error()))
@@ -55,7 +51,7 @@ func Run(configPath string) error {
 	}
 
 	handler := delivery.NewHandler(ss)
-	srv := server.NewServer(cfg, handler.Init())
+	srv := server.NewServer(cfg.HTTP, handler.Init())
 
 	go func() {
 		if err := srv.Run(); !errors.Is(err, http.ErrServerClosed) {
@@ -85,21 +81,6 @@ func Run(configPath string) error {
 	// closing storage connection
 	if err := repos.Close(); err != nil {
 		logger.Log.Error("failed to close db connection", slog.String("err", err.Error()))
-	}
-
-	logger.Log.Info("Server exiting, closing the log files")
-
-	for domainKey, wc := range cfg.ToClose {
-		// check to ensure only io.Coser records are closed
-		if closer, ok := wc.(io.Closer); ok {
-			if err := closer.Close(); err != nil {
-				log.Printf("failed to close %s file: %v\n", domainKey, err)
-			} else {
-				log.Printf("successfully closed %s file\n", domainKey)
-			}
-		} else {
-			log.Printf("%s does not implement io.Closer, skipping\n", domainKey)
-		}
 	}
 
 	return nil

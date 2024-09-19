@@ -5,24 +5,27 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"os"
 	"strings"
-)
-
-const (
-	DefaultLoggerFileName = "logs.log"
-	DailyChanne           = "daily"
-	StackChanne           = "stack"
+	"sync"
 )
 
 var (
+	once                   sync.Once
 	ErrDestinationNotFound = errors.New("destination not provided")
 	Log                    *slog.Logger
 )
 
 func Init(destination io.Writer, l string) {
-	Log = slog.New(slog.NewJSONHandler(destination, &slog.HandlerOptions{
-		Level: getLevel(l),
-	}))
+	once.Do(func() {
+		if destination == nil {
+			destination = os.Stdout
+		}
+
+		Log = slog.New(slog.NewJSONHandler(destination, &slog.HandlerOptions{
+			Level: getLevel(l),
+		}))
+	})
 }
 
 func LogError(ctx context.Context, err error, message string) {
