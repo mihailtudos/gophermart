@@ -152,61 +152,65 @@ func (u *userRepository) GetUserByID(ctx context.Context, id int) (domain.User, 
 	return user, nil
 }
 
-func (u *userRepository) RegisterOrder(ctx context.Context, order domain.Order) (int, error) {
-	existingOrder := domain.Order{}
+func (u *userRepository) RegisterOrder(ctx context.Context, order domain.Order) (domain.Order, error) {
+	tx, err := u.db.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return domain.Order{}, err
+	}
 
-	checkOrderStmt := `
-		SELECT id, user_id, status 
-		FROM orders 
-		WHERE number = $1
-	`
-	err := u.db.QueryRowContext(ctx, checkOrderStmt, order.Number).Scan(
-		&existingOrder.ID,
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	existingOrder := domain.Order{}
+	err = tx.QueryRowContext(ctx, queries.GetOrderByOrderNumber, order.OrderNumber).Scan(
+		&existingOrder.OrderNumber,
 		&existingOrder.UserID,
-		&existingOrder.Status)
+		&existingOrder.OrderStatus)
 
 	if err != nil && err != sql.ErrNoRows {
-		return 0, fmt.Errorf("error checking existing order: %w", err)
+		return domain.Order{}, fmt.Errorf("error checking existing order: %w", err)
 	}
 
 	if err == nil {
 		if existingOrder.UserID != order.UserID {
-			return 0, ErrOrderAlreadyExistsDifferentUser
+			return existingOrder, ErrOrderAlreadyExistsDifferentUser
 		}
 
 		if existingOrder.UserID == order.UserID {
-			if existingOrder.Status == domain.ORDER_STATUS_PROCESSING {
-				return 0, ErrOrderAlreadyAccepted
+			if existingOrder.OrderStatus == domain.ORDER_STATUS_PROCESSING {
+				return existingOrder, ErrOrderAlreadyAccepted
 			}
 
-			return 0, ErrOrderAlreadyExistsSameUser
+			return existingOrder, ErrOrderAlreadyExistsSameUser
 		}
 	}
 
-	insertStmt := `
-		INSERT INTO orders(user_id, number, status)
-		VALUES($1, $2, $3)
-		RETURNING id
-	`
+	var insertedOrder domain.Order
+	err = tx.QueryRowContext(ctx, queries.InsertOrderRecord, order.UserID, order.OrderNumber, order.OrderStatus).Scan(
+		&insertedOrder.OrderNumber,
+		&insertedOrder.UserID,
+		&insertedOrder.OrderStatus,
+		&insertedOrder.Accrual,
+		&insertedOrder.CreatedAt,
+		&insertedOrder.UpdatedAt,
+	)
 
-	var newOrderID int
-	err = u.db.QueryRowContext(ctx, insertStmt, order.UserID, order.Number, order.Status).Scan(&newOrderID)
 	if err != nil {
-		return 0, fmt.Errorf("error inserting new order: %w", err)
+		return domain.Order{}, fmt.Errorf("error inserting new order: %w", err)
 	}
 
-	return newOrderID, nil
+	if err := tx.Commit(); err != nil {
+		return domain.Order{}, err
+	}
+
+	return insertedOrder, nil
 }
 
 func (u *userRepository) GetUserOrders(ctx context.Context, userID int) ([]domain.Order, error) {
-	stmt := `
-		SELECT number, created_at, status, accrual
-		FROM orders
-		WHERE user_id = $1
-		ORDER BY created_at DESC
-	`
-
-	rows, err := u.db.QueryContext(ctx, stmt, userID)
+	rows, err := u.db.QueryContext(ctx, queries.GetUserOrders, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -219,9 +223,9 @@ func (u *userRepository) GetUserOrders(ctx context.Context, userID int) ([]domai
 		order := domain.Order{}
 
 		err := rows.Scan(
-			&order.Number,
+			&order.OrderNumber,
 			&createdAt,
-			&order.Status,
+			&order.OrderStatus,
 			&order.Accrual,
 		)
 
@@ -372,8 +376,8 @@ func (u *userRepository) GetUnfinishedOrders(ctx context.Context) ([]domain.Orde
 	for rows.Next() {
 		var order domain.Order
 		rows.Scan(
-			&order.Number,
-			&order.Status,
+			&order.OrderNumber,
+			&order.OrderStatus,
 			&order.Accrual)
 
 		orders = append(orders, order)
@@ -403,9 +407,9 @@ func (u *userRepository) UpdateOrder(ctx context.Context, order domain.Order) er
 		}
 	}()
 
-	fmt.Println("updaging to ", order.Status, order.Accrual, order.Number)
+	fmt.Println("updaging to ", order.OrderStatus, order.Accrual, order.OrderNumber)
 	res, err := tx.ExecContext(ctx, queries.UpdateOrderStatusAndAccrualPoints,
-		order.Status, order.Accrual, order.Number)
+		order.OrderStatus, order.Accrual, order.OrderNumber)
 
 	if err != nil {
 		return err

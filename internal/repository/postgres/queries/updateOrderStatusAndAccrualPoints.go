@@ -3,8 +3,8 @@ package queries
 const UpdateOrderStatusAndAccrualPoints = `
 	UPDATE orders
 	SET
-		status $1
+		order_status $1
 		accrual $2
 	WHERE
-		order = $3
+		order_number = $3
 `

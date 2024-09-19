@@ -107,7 +107,7 @@ func (ss *Services) updateOrders(ctx context.Context) {
 	}
 
 	for _, v := range orders {
-		fmt.Println(v.Number, v.Status)
+		fmt.Println(v.OrderNumber, v.OrderStatus)
 	}
 
 	for _, order := range orders {
@@ -119,14 +119,14 @@ func (ss *Services) updateOrders(ctx context.Context) {
 
 		fmt.Printf("GetOrderInfo %#v", updateOrder)
 
-		if order.Status != updateOrder.Status {
+		if order.OrderStatus != updateOrder.OrderStatus {
 			err := ss.UserService.UpdateOrder(ctx, updateOrder)
 			if err != nil {
 				logger.Log.Error("failed to update the order status", slog.String("err", err.Error()))
 				continue
 			}
 		} else {
-			logger.Log.Info("skipping order " +  order.Number)
+			logger.Log.Info("skipping order " + order.OrderNumber)
 		}
 	}
 }

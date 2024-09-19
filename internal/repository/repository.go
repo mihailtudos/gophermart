@@ -25,7 +25,7 @@ type BalanceHandler interface {
 }
 
 type OrdersHandler interface {
-	RegisterOrder(ctx context.Context, order domain.Order) (int, error)
+	RegisterOrder(ctx context.Context, order domain.Order) (domain.Order, error)
 	GetUserOrders(ctx context.Context, userID int) ([]domain.Order, error)
 	GetUnfinishedOrders(ctx context.Context) ([]domain.Order, error)
 	UpdateOrder(ctx context.Context, updatedOrder domain.Order) error

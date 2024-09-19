@@ -31,7 +31,7 @@ func New(accrualAddress string) *Client {
 	}
 }
 func (c *Client) GetOrderInfo(order domain.Order) (domain.Order, error) {
-	url, err := url.Parse(fmt.Sprintf(c.Address+"/api/orders/%s", order.Number))
+	url, err := url.Parse(fmt.Sprintf(c.Address+"/api/orders/%s", order.OrderNumber))
 	if err != nil {
 		return domain.Order{}, fmt.Errorf("failed to parse URL: %w", err)
 	}

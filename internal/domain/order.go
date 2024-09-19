@@ -3,14 +3,13 @@ package domain
 import "time"
 
 type Order struct {
-	ID         int       `json:"-"`
-	UserID     int       `json:"user_id,omitempty"`
-	Number     string    `json:"number"`
-	Status     string    `json:"status"`
-	Accrual    int       `json:"accrual"`
-	UploadedAt string    `json:"uploaded_at"`
-	CreatedAt  time.Time `json:"-"`
-	UpdatedAt  time.Time `json:"-"`
+	OrderNumber string    `json:"order" db:"order_number"`
+	UserID      int       `json:"user_id,omitempty" db:"user_id"`
+	OrderStatus string    `json:"status" db:"order_status"`
+	Accrual     float64   `json:"accrual" db:"accrual"`
+	UploadedAt  string    `json:"uploaded_at" db:"uploaded_at"`
+	CreatedAt   time.Time `json:"-" db:"created_at"`
+	UpdatedAt   time.Time `json:"-" db:"updated_at"`
 }
 
 const (

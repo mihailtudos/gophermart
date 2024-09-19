@@ -95,7 +95,7 @@ func (u *userService) VerifyToken(ctx context.Context, token string) (int, error
 	return id, nil
 }
 
-func (u *userService) RegisterOrder(ctx context.Context, order domain.Order) (int, error) {
+func (u *userService) RegisterOrder(ctx context.Context, order domain.Order) (domain.Order, error) {
 	return u.repo.RegisterOrder(ctx, order)
 }
 

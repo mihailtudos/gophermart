@@ -1,8 +1,9 @@
 package queries
 
-
 const GetUnfinishedOrders = `
-	SELECT number, status, accrual
-	FROM orders
-	WHERE status IN ($1, $2)
+	SELECT order_number, order_status, accrual
+	FROM 
+		orders
+	WHERE 
+		order_status IN ($1, $2)
 `
