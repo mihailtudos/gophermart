@@ -31,13 +31,16 @@ func (h *Handler) Init() *chi.Mux {
 		MaxAge:           300, // Maximum value not ignored by any of major browsers
 	}))
 
-	uh := NewUserHandler(h.services.UserService)
-	oh := NewOrderHandler(h.services.OrderService)
+	userHandler := NewUserHandler(*h.services.UserService)
+	authHandler := NewAuthHanler(
+		h.services.TokenManager, 
+		h.services.UserService)
 
-	router.Route("/api", func(r chi.Router) {
-		r.Mount("/user", uh)
-		r.Mount("/orders", oh)
-	})
+		router.Route("/api/user", func(r chi.Router) {
+			r.Mount("/", userHandler) // Mount the general user routes here
+			r.Post("/login", authHandler.Login)       // Add specific login route
+			r.Post("/register", authHandler.Register) // Add specific register route
+		})
 
 	return router
 }

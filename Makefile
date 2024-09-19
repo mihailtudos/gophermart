@@ -8,10 +8,10 @@ run/dbs:
 	docker compose up -d
 
 migrate/up:
-	goose -dir db/migrations postgres "postgres://admin:admin@localhost:5432/db?sslmode=disable" up
+	goose -dir internal/repository/db/migrations postgres "postgres://admin:admin@localhost:5432/db?sslmode=disable" up
 
 migrate/down:
-	goose -dir db/migrations postgres "postgres://admin:admin@localhost:5432/db?sslmode=disable" down
+	goose -dir internal/repository/db/migrations postgres "postgres://admin:admin@localhost:5432/db?sslmode=disable" down
 
 build/gophermart:
 	cd cmd/gophermart && go build -buildvcs=false -o gophermart && cd ../..

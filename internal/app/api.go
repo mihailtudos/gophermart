@@ -22,14 +22,15 @@ import (
 func Run() error {
 	cfg := config.Init()
 	logger.Init(nil, cfg.Logger.Level)
-	
+
 	// Create a context that will be canceled on shutdown signal
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	repos, err := repository.NewRepository(ctx, cfg.DB)
 	if err != nil {
-		logger.Log.ErrorContext(context.Background(), "failed to init repository",
+		logger.Log.ErrorContext(ctx,
+			"failed to init repository",
 			slog.String("err", err.Error()))
 		return err
 	}
@@ -45,7 +46,8 @@ func Run() error {
 	ss.UpdateOrdersInBackground(ctx, 1*time.Second)
 
 	if err != nil {
-		logger.Log.ErrorContext(context.Background(), "failed to init services",
+		logger.Log.ErrorContext(ctx,
+			"failed to init services",
 			slog.String("err", err.Error()))
 		return err
 	}
@@ -70,7 +72,7 @@ func Run() error {
 	cancel()
 
 	const timeout = 5 * time.Second
-	ctx, shutdown := context.WithTimeout(context.Background(), timeout)
+	ctx, shutdown := context.WithTimeout(ctx, timeout)
 	defer shutdown()
 
 	// stopping server

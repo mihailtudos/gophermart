@@ -14,25 +14,6 @@ import (
 	"github.com/mihailtudos/gophermart/internal/service/auth"
 )
 
-type UserService interface {
-	Register(ctx context.Context, input domain.User) (int, error)
-	Login(ctx context.Context, input auth.UserAuthInput) (domain.User, error)
-	GenerateUserTokens(ctx context.Context, userID int) (auth.Tokens, error)
-	SetSessionToken(ctx context.Context, userID int, token string) error
-	RefreshTokens(ctx context.Context, refreshToken string) (auth.Tokens, error)
-	GetUserByLogin(ctx context.Context, login string) (domain.User, error)
-	GetUserByID(ctx context.Context, userID int) (domain.User, error)
-	VerifyToken(ctx context.Context, token string) (int, error)
-
-	repository.OrdersHandler
-	repository.UserBalance
-	repository.BalanceHandler
-}
-
-type OrderService interface {
-	Create(ctx context.Context, orderNumber string) (int, error)
-}
-
 type TokenManager interface {
 	NewJWT(userID string, ttl *time.Duration) (string, error)
 	Parse(accessToken string) (string, error)
@@ -41,32 +22,26 @@ type TokenManager interface {
 }
 
 type Services struct {
-	UserService
-	OrderService
-	TokenManager
+	UserService  *UserService
+	TokenManager TokenManager
 	accrual.AccrualClient
 }
 
 func NewServices(repos *repository.Repositories,
-	authConfig config.AuthConfig, accrualClient accrual.AccrualClient) (*Services, error) {
+	authConfig config.AuthConfig,
+	accrualClient accrual.AccrualClient) (*Services, error) {
 	tms, err := auth.NewManager(authConfig.JWT)
 	if err != nil {
 		return nil, err
 	}
 
-	us, err := NewUserService(repos.UserRepo, tms)
-	if err != nil {
-		return nil, err
-	}
-
-	os, err := NewOrderService(repos.OrderRepo)
+	userService, err := NewUserService(repos.UserRepo, tms)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Services{
-		UserService:   us,
-		OrderService:  os,
+		UserService:   userService,
 		TokenManager:  tms,
 		AccrualClient: accrualClient,
 	}, nil
