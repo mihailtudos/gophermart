@@ -13,8 +13,8 @@ type Order struct {
 }
 
 const (
-	ORDER_STATUS_NEW        = "NEW"
-	ORDER_STATUS_PROCESSING = "PROCESSING"
-	ORDER_STATUS_INVALID    = "INVALID"
-	ORDER_STATUS_PROCESSED  = "PROCESSED"
+	OrderStatusNew        = "NEW"
+	OrderStatusProcessing = "PROCESSING"
+	OrderStatusInvalid    = "INVALID"
+	OrderStatusProcessed  = "PROCESSED"
 )

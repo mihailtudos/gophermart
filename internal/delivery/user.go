@@ -181,7 +181,7 @@ func (uh *userHandler) registerOrder(w http.ResponseWriter, r *http.Request) {
 	order := domain.Order{
 		OrderNumber: input,
 		UserID:      user.ID,
-		OrderStatus: domain.ORDER_STATUS_NEW,
+		OrderStatus: domain.OrderStatusNew,
 	}
 
 	_, err = uh.service.RegisterOrder(r.Context(), order)

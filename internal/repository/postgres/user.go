@@ -180,7 +180,7 @@ func (u *userRepository) RegisterOrder(ctx context.Context, order domain.Order) 
 		}
 
 		if existingOrder.UserID == order.UserID {
-			if existingOrder.OrderStatus == domain.ORDER_STATUS_PROCESSING {
+			if existingOrder.OrderStatus == domain.OrderStatusProcessing {
 				return existingOrder, ErrOrderAlreadyAccepted
 			}
 
@@ -365,7 +365,7 @@ func (u *userRepository) GetUnfinishedOrders(ctx context.Context) ([]domain.Orde
 		}
 	}()
 
-	rows, err := tx.QueryContext(ctx, queries.GetUnfinishedOrders, domain.ORDER_STATUS_NEW, domain.ORDER_STATUS_PROCESSED)
+	rows, err := tx.QueryContext(ctx, queries.GetUnfinishedOrders, domain.OrderStatusNew, domain.OrderStatusProcessed)
 
 	if err != nil {
 		return orders, err
