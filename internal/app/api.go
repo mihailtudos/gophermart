@@ -46,7 +46,7 @@ func Run(configPath string) error {
 	ss, err := service.NewServices(repos, cfg.Auth, accrualClient)
 
 	// starting the backgorun process
-	ss.UpdateOrdersInBackground(ctx, 3*time.Second)
+	ss.UpdateOrdersInBackground(ctx, 1*time.Second)
 
 	if err != nil {
 		logger.Log.ErrorContext(context.Background(), "failed to init services",

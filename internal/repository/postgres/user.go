@@ -5,10 +5,12 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/mihailtudos/gophermart/internal/domain"
+	"github.com/mihailtudos/gophermart/internal/logger"
 	"github.com/mihailtudos/gophermart/internal/repository/postgres/queries"
 )
 
@@ -406,15 +408,36 @@ func (u *userRepository) UpdateOrder(ctx context.Context, order domain.Order) er
 		}
 	}()
 
-	res, err := tx.ExecContext(ctx, queries.UpdateOrderStatusAndAccrualPoints,
-		order.OrderStatus, order.Accrual, order.OrderNumber)
+	err = tx.QueryRowContext(ctx, queries.UpdateOrderStatusAndAccrualPoints,
+		order.OrderStatus, order.Accrual, order.OrderNumber).Scan(
+		&order.UserID,
+	)
 
 	if err != nil {
 		return err
 	}
 
-	afr, _ := res.RowsAffected()
-	fmt.Println("update order, rows affected ", afr)
+	// TODO -- remove
+	logger.Log.InfoContext(ctx,
+		"status and accrual points updated",
+		slog.String("order", order.OrderNumber),
+		slog.Int("userID", order.UserID))
+
+	res, err := tx.ExecContext(ctx, queries.UpdateUserLoyaltyPoints, order.Accrual, order.UserID)
+
+	if err != nil {
+		return err
+	}
+
+	ar, err := res.RowsAffected()
+	if err != nil || ar != 1 {
+		return fmt.Errorf("user loyalty points not updated %w", err)
+	}
+
+	logger.Log.InfoContext(ctx,
+		"user loyalty points updated",
+		slog.String("order", order.OrderNumber),
+		slog.Int("userID", order.UserID))
 
 	if err := tx.Commit(); err != nil {
 		return err

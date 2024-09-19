@@ -7,4 +7,5 @@ const UpdateOrderStatusAndAccrualPoints = `
 		accrual = $2
 	WHERE
 		order_number = $3
+	RETURNING user_id
 `
