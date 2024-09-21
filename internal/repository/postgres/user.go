@@ -24,6 +24,7 @@ func NewUserRepository(db *sqlx.DB) (*userRepository, error) {
 	}, nil
 }
 
+// TODO - checkout https://sqlc.dev/
 func (u *userRepository) Create(ctx context.Context, user domain.User) (int, error) {
 	tx, err := u.db.BeginTx(ctx, nil)
 	if err != nil {

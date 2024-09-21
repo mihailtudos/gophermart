@@ -67,7 +67,11 @@ var (
 	instance *config
 )
 
-func NewConfig() {
+func NewConfig() *config {
+	if instance != nil {
+		return instance
+	}
+
 	once.Do(func() {
 		var cfg config
 		setDefaults(&cfg)
@@ -96,6 +100,7 @@ func NewConfig() {
 		instance = &cfg
 	})
 
+	return instance
 }
 
 func setDefaults(cfg *config) {
@@ -123,12 +128,4 @@ func assignValueCfgProp(destination *time.Duration, defaultValue string) {
 	}
 
 	*destination = duration
-}
-
-func Init() *config {
-	if instance == nil {
-		NewConfig()
-	}
-
-	return instance
 }

@@ -6,12 +6,14 @@ import (
 	"unicode"
 )
 
+// TODO - low sev, could be replaced with https://pkg.go.dev/github.com/go-playground/validator/v10
 var (
 	EmailRX = regexp.MustCompile(`^[a-zA-Z0-9.!#$%&'*+/=?^_` + "`" + `{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$`)
 
 	ErrValidation = errors.New("validation error")
 )
 
+// TODO - add unit tests
 type Validator struct {
 	Errors map[string]string
 }
@@ -57,10 +59,12 @@ func Unique[T comparable](values []T) bool {
 	return len(values) == len(uniqueValues)
 }
 
+
 func IsValidOrderNumber(number string) bool {
 	var sum int
 	var alternate bool
 
+	// TODO - use for range instead
 	for i := len(number) - 1; i >= 0; i-- {
 		digit := number[i]
 

@@ -7,6 +7,10 @@ run/accrual:
 run/dbs:
 	docker compose up -d
 
+# TODO - ensure it passes lint https://golangci-lint.run/
+run/ling:
+    golangci-lint run ./...
+
 migrate/up:
 	goose -dir internal/repository/db/migrations postgres "postgres://admin:admin@localhost:5432/db?sslmode=disable" up
 

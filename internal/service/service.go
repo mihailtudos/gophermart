@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/mihailtudos/gophermart/internal/app/accrual"
 	"github.com/mihailtudos/gophermart/internal/config"
 	"github.com/mihailtudos/gophermart/internal/domain"
 	"github.com/mihailtudos/gophermart/internal/logger"
@@ -21,15 +20,27 @@ type TokenManager interface {
 	CreateSession(userID int, token string) (domain.Session, error)
 }
 
+type AccrualClient interface {
+	GetOrderInfo(domain.Order) (domain.Order, error)
+}
+
+// TODO - make use of interfaces
+type tokenManager interfect {
+....
+}
+type userService interface {
+....
+}
+
 type Services struct {
-	UserService  *UserService
-	TokenManager TokenManager
-	accrual.AccrualClient
+	UserService   *UserService
+	TokenManager  TokenManager
+	AccrualClient AccrualClient
 }
 
 func NewServices(repos *repository.Repositories,
 	authConfig config.AuthConfig,
-	accrualClient accrual.AccrualClient) (*Services, error) {
+	accrualClient AccrualClient) (*Services, error) {
 	tms, err := auth.NewManager(authConfig.JWT)
 	if err != nil {
 		return nil, err
@@ -96,12 +107,14 @@ func (ss *Services) updateOrders(ctx context.Context) {
 
 		if order.OrderStatus != updateOrder.OrderStatus {
 			err := ss.UserService.UpdateOrder(ctx, updateOrder)
+			
 			if err != nil {
 				logger.Log.Error("failed to update the order status", slog.String("err", err.Error()))
-				continue
 			}
-		} else {
-			logger.Log.Info("skipping order " + order.OrderNumber)
+
+			continue
 		}
+
+		logger.Log.Info("skipping order " + order.OrderNumber)
 	}
 }

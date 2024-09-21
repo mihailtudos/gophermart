@@ -16,6 +16,11 @@ import (
 	"github.com/mihailtudos/gophermart/pkg/helpers"
 )
 
+const (
+	ContentTypeHeaderName = "Content-Type"
+	PlainTextContentType  = "text/plain"
+)
+
 type userHandler struct {
 	userService service.UserService
 	authService service.TokenManager
@@ -40,7 +45,7 @@ func NewUserHandler(us service.UserService) *chi.Mux {
 }
 
 func (uh *userHandler) registerOrder(w http.ResponseWriter, r *http.Request) {
-	if r.Header.Get("Content-Type") != "text/plain" {
+	if r.Header.Get(ContentTypeHeaderName) != PlainTextContentType {
 		ErrorResponse(w, r, http.StatusBadRequest, nil)
 		return
 	}

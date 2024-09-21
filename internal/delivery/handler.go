@@ -11,13 +11,11 @@ type Handler struct {
 	services *service.Services
 }
 
-func NewHandler(s *service.Services) *Handler {
-	return &Handler{
+func NewHandler(s *service.Services) *chi.Mux {
+	h := &Handler{
 		services: s,
 	}
-}
 
-func (h *Handler) Init() *chi.Mux {
 	router := chi.NewMux()
 	router.Use(middleware.Logger)
 	router.Use(middleware.Recoverer)
@@ -33,14 +31,14 @@ func (h *Handler) Init() *chi.Mux {
 
 	userHandler := NewUserHandler(*h.services.UserService)
 	authHandler := NewAuthHanler(
-		h.services.TokenManager, 
+		h.services.TokenManager,
 		h.services.UserService)
 
-		router.Route("/api/user", func(r chi.Router) {
-			r.Mount("/", userHandler) // Mount the general user routes here
-			r.Post("/login", authHandler.Login)       // Add specific login route
-			r.Post("/register", authHandler.Register) // Add specific register route
-		})
+	router.Route("/api/user", func(r chi.Router) {
+		r.Mount("/", userHandler)                 // Mount the general user routes here
+		r.Post("/login", authHandler.Login)       // Add specific login route
+		r.Post("/register", authHandler.Register) // Add specific register route
+	})
 
 	return router
 }

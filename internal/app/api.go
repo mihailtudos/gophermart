@@ -20,7 +20,7 @@ import (
 )
 
 func Run() error {
-	cfg := config.Init()
+	cfg := config.NewConfig()
 	logger.Init(nil, cfg.Logger.Level)
 
 	// Create a context that will be canceled on shutdown signal
@@ -52,8 +52,7 @@ func Run() error {
 		return err
 	}
 
-	handler := delivery.NewHandler(ss)
-	srv := server.NewServer(cfg.HTTP, handler.Init())
+	srv := server.NewServer(cfg.HTTP, delivery.NewHandler(ss))
 
 	go func() {
 		if err := srv.Run(); !errors.Is(err, http.ErrServerClosed) {

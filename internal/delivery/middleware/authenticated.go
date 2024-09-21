@@ -3,6 +3,7 @@ package middleware
 import (
 	"errors"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/mihailtudos/gophermart/internal/repository/postgres"
@@ -11,24 +12,41 @@ import (
 	"github.com/mihailtudos/gophermart/pkg/helpers"
 )
 
+const (
+	authTokenType      = "Bearer"
+	authHeaderParts    = 2
+	authTokenTypeIndex = 0
+	authTokenIndex     = 1
+)
+
+var bearerRegex = regexp.MustCompile(`^Bearer\s[\w-]*\.[\w-]*\.[\w-]*$`)
+
 func Authenticated(us service.UserService) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// avoid any sort of chaching
 			w.Header().Add("Vary", "Authorization")
-			authorizationHeader := r.Header.Get("Authorization")
-			if authorizationHeader == "" {
-				http.Error(w, "", http.StatusUnauthorized)
+			authHeader := r.Header.Get("Authorization")
+
+			// Check if the Authorization header is present
+			if authHeader == "" {
+				http.Error(w, "Authorization header missing", http.StatusUnauthorized)
 				return
 			}
 
-			headerParts := strings.Split(authorizationHeader, " ")
-			if headerParts[0] != "Bearer" || len(headerParts) != 2 {
+			// Ensure the header starts with "Bearer" and is followed by a valid JWT format using regex
+			if !bearerRegex.MatchString(authHeader) {
+				http.Error(w, "Invalid Authorization header format", http.StatusUnauthorized)
+				return
+			}
+
+			headerParts := strings.Split(authHeader, " ")
+			if headerParts[authTokenTypeIndex] != authTokenType || len(headerParts) != authHeaderParts {
 				http.Error(w, "missing auth header", http.StatusUnauthorized)
 				return
 			}
 
-			token := headerParts[1]
+			token := headerParts[authTokenIndex]
 			id, err := us.VerifyToken(r.Context(), token)
 			if err != nil {
 				switch {

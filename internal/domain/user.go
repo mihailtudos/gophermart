@@ -10,6 +10,7 @@ import (
 
 var ErrInvalidHash = errors.New("invalid hash")
 
+// swap to UUID
 type User struct {
 	ID        int       `json:"id,omitempty"`
 	Login     string    `json:"login"`

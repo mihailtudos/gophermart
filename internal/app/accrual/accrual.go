@@ -13,10 +13,6 @@ import (
 
 const httpClientTimeout = time.Minute
 
-type AccrualClient interface {
-	GetOrderInfo(domain.Order) (domain.Order, error)
-}
-
 type Client struct {
 	*http.Client
 	Address string

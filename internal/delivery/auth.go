@@ -13,6 +13,7 @@ import (
 	"github.com/mihailtudos/gophermart/pkg/helpers"
 )
 
+// TODO - UserService replace with interface
 type authHandler struct {
 	tokenManager service.TokenManager
 	userService  *service.UserService
