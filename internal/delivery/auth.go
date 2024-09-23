@@ -1,28 +1,31 @@
 package delivery
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/mihailtudos/gophermart/internal/domain"
 	"github.com/mihailtudos/gophermart/internal/repository/postgres"
-	"github.com/mihailtudos/gophermart/internal/service"
 	"github.com/mihailtudos/gophermart/internal/service/auth"
 	"github.com/mihailtudos/gophermart/internal/validator"
 	"github.com/mihailtudos/gophermart/pkg/helpers"
 )
 
-// TODO - UserService replace with interface
-type authHandler struct {
-	tokenManager service.TokenManager
-	userService  *service.UserService
+type userService interface {
+	SetSessionToken(ctx context.Context, userID string, tokens string) error
+	GenerateUserTokens(ctx context.Context, userID string) (auth.Tokens, error)
+	Login(ctx context.Context, input auth.UserAuthInput) (domain.User, error)
+	Register(ctx context.Context, user domain.User) (string, error)
 }
 
-func NewAuthHanler(tm service.TokenManager, us *service.UserService) *authHandler {
-	return &authHandler{
-		tokenManager: tm,
-		userService:  us}
+type authHandler struct {
+	userService userService
+}
+
+func NewAuthHanler(us userService) *authHandler {
+	return &authHandler{userService: us}
 }
 
 func (ah *authHandler) Login(w http.ResponseWriter, r *http.Request) {

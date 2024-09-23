@@ -391,7 +391,6 @@ func (u *userRepository) UpdateOrder(ctx context.Context, order domain.Order) er
 		return err
 	}
 
-	// TODO -- remove
 	logger.Log.InfoContext(ctx,
 		"status and accrual points updated",
 		slog.String("order", order.OrderNumber),

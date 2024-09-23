@@ -30,9 +30,7 @@ func NewHandler(s *service.Services) *chi.Mux {
 	}))
 
 	userHandler := NewUserHandler(*h.services.UserService)
-	authHandler := NewAuthHanler(
-		h.services.TokenManager,
-		h.services.UserService)
+	authHandler := NewAuthHanler(h.services.UserService)
 
 	router.Route("/api/user", func(r chi.Router) {
 		r.Mount("/", userHandler)                 // Mount the general user routes here
