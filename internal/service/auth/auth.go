@@ -17,16 +17,6 @@ var (
 	ErrInvalidToken = errors.New("invalid token")
 )
 
-type UserAuthInput struct {
-	Login    string `json:"login"`
-	Password string `json:"password"`
-}
-
-type Tokens struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-}
-
 type Manager struct {
 	jwtCfg config.JWTConfig
 }

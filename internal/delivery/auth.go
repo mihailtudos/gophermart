@@ -8,15 +8,14 @@ import (
 
 	"github.com/mihailtudos/gophermart/internal/domain"
 	"github.com/mihailtudos/gophermart/internal/repository/postgres"
-	"github.com/mihailtudos/gophermart/internal/service/auth"
 	"github.com/mihailtudos/gophermart/internal/validator"
 	"github.com/mihailtudos/gophermart/pkg/helpers"
 )
 
 type userService interface {
 	SetSessionToken(ctx context.Context, userID string, tokens string) error
-	GenerateUserTokens(ctx context.Context, userID string) (auth.Tokens, error)
-	Login(ctx context.Context, input auth.UserAuthInput) (domain.User, error)
+	GenerateUserTokens(ctx context.Context, userID string) (domain.Tokens, error)
+	Login(ctx context.Context, input domain.UserAuthInput) (domain.User, error)
 	Register(ctx context.Context, user domain.User) (string, error)
 }
 
@@ -29,7 +28,7 @@ func NewAuthHanler(us userService) *authHandler {
 }
 
 func (ah *authHandler) Login(w http.ResponseWriter, r *http.Request) {
-	var input auth.UserAuthInput
+	var input domain.UserAuthInput
 	if err := helpers.ReadJSON(w, r, &input); err != nil {
 		ErrorResponse(w, r, http.StatusBadRequest, err.Error())
 		return
@@ -89,7 +88,7 @@ func (ah *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ah *authHandler) Register(w http.ResponseWriter, r *http.Request) {
-	var input auth.UserAuthInput
+	var input domain.UserAuthInput
 	if err := helpers.ReadJSON(w, r, &input); err != nil {
 		ErrorResponse(w, r, http.StatusBadRequest, err.Error())
 		return

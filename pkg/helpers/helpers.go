@@ -7,12 +7,12 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/mihailtudos/gophermart/internal/service/auth"
+	"github.com/mihailtudos/gophermart/internal/domain"
 )
 
 type Envelope map[string]any
 
-func SetAuthorizationHeaders(w http.ResponseWriter, tokens auth.Tokens) {
+func SetAuthorizationHeaders(w http.ResponseWriter, tokens domain.Tokens) {
 	// Set the Authorization header with the access token
 	w.Header().Set("Authorization", fmt.Sprintf("Bearer %s", tokens.AccessToken))
 

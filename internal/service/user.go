@@ -5,7 +5,6 @@ import (
 
 	"github.com/mihailtudos/gophermart/internal/domain"
 	"github.com/mihailtudos/gophermart/internal/repository"
-	"github.com/mihailtudos/gophermart/internal/service/auth"
 )
 
 type UserService struct {
@@ -40,7 +39,7 @@ func (u *UserService) SetSessionToken(ctx context.Context, userID string, token 
 	return u.repo.SetSessionToken(ctx, st)
 }
 
-func (u *UserService) Login(ctx context.Context, input auth.UserAuthInput) (domain.User, error) {
+func (u *UserService) Login(ctx context.Context, input domain.UserAuthInput) (domain.User, error) {
 	user, err := u.repo.GetUserByLogin(ctx, input.Login)
 	if err != nil {
 		return domain.User{}, err
@@ -49,22 +48,22 @@ func (u *UserService) Login(ctx context.Context, input auth.UserAuthInput) (doma
 	return user, nil
 }
 
-func (u *UserService) RefreshTokens(ctx context.Context, refreshToken string) (auth.Tokens, error) {
-	return auth.Tokens{}, nil
+func (u *UserService) RefreshTokens(ctx context.Context, refreshToken string) (domain.Tokens, error) {
+	return domain.Tokens{}, nil
 }
 
-func (u *UserService) GenerateUserTokens(ctx context.Context, userID string) (auth.Tokens, error) {
+func (u *UserService) GenerateUserTokens(ctx context.Context, userID string) (domain.Tokens, error) {
 	token, err := u.tokenManager.NewJWT(userID, nil)
 	if err != nil {
-		return auth.Tokens{}, err
+		return domain.Tokens{}, err
 	}
 
 	refToken, err := u.tokenManager.NewRefreshToken()
 	if err != nil {
-		return auth.Tokens{}, err
+		return domain.Tokens{}, err
 	}
 
-	return auth.Tokens{
+	return domain.Tokens{
 		AccessToken:  token,
 		RefreshToken: refToken,
 	}, nil
