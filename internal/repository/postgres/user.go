@@ -25,10 +25,12 @@ func NewUserRepository(db *sqlx.DB) (*userRepository, error) {
 }
 
 // TODO - checkout https://sqlc.dev/
-func (u *userRepository) Create(ctx context.Context, user domain.User) (int, error) {
+func (u *userRepository) Create(ctx context.Context, user domain.User) (string, error) {
+	var userID string
+
 	tx, err := u.db.BeginTx(ctx, nil)
 	if err != nil {
-		return 0, err
+		return userID, err
 	}
 
 	defer func() {
@@ -37,56 +39,34 @@ func (u *userRepository) Create(ctx context.Context, user domain.User) (int, err
 		}
 	}()
 
-	userStmt := `
-		INSERT INTO users (login, password_hash)
-		VALUES($1, $2)
-		RETURNING id
-	`
-
-	var userID int
-	row := tx.QueryRowContext(ctx, userStmt, user.Login, user.Password.Hash)
+	row := tx.QueryRowContext(ctx, queries.InsertNewUser, user.Login, user.Password.Hash)
 	if err = row.Scan(&userID); err != nil {
 		if err.Error() == `pq: duplicate key value violates unique constraint "users_login_key"` {
-			return 0, ErrDuplicateLogin
+			return userID, ErrDuplicateLogin
 		}
-		return 0, err
+		return userID, err
 	}
 
-	loyaltyStmt := `
-		INSERT INTO user_loyalty_points (user_id)
-		VALUES ($1)
-	`
-
-	_, err = tx.ExecContext(ctx, loyaltyStmt, userID)
+	_, err = tx.ExecContext(ctx, queries.CreateUserBalanceRecord, userID)
 
 	if err != nil {
-		return 0, err
+		return userID, err
 	}
 
 	if err = tx.Commit(); err != nil {
-		return 0, err
+		return userID, err
 	}
 
 	return userID, nil
 }
 
 func (u *userRepository) SetSessionToken(ctx context.Context, st domain.Session) error {
-	stmtDelete := `
-		DELETE FROM session_tokens 
-		WHERE user_id = $1
-	`
-
-	_, err := u.db.ExecContext(ctx, stmtDelete, st.UserID)
+	_, err := u.db.ExecContext(ctx, queries.DeleteUserSession, st.UserID)
 	if err != nil {
 		return fmt.Errorf("error deleting old token: %w", err)
 	}
 
-	stmtInsert := `
-		INSERT INTO session_tokens (user_id, token, expires_at)
-		VALUES ($1, $2, $3)
-	`
-
-	_, err = u.db.ExecContext(ctx, stmtInsert, st.UserID, st.Token, st.ExpiresAt)
+	_, err = u.db.ExecContext(ctx, queries.CreateNewUserSession, st.UserID, st.Token, st.ExpiresAt)
 	if err != nil {
 		return fmt.Errorf("error inserting new token: %w", err)
 	}
@@ -95,12 +75,7 @@ func (u *userRepository) SetSessionToken(ctx context.Context, st domain.Session)
 }
 
 func (u *userRepository) GetUserByLogin(ctx context.Context, login string) (domain.User, error) {
-	stmt := `
-		SELECT id, login, password_hash, created_at, version
-		FROM users
-		WHERE login = $1
-	`
-	row := u.db.QueryRowContext(ctx, stmt, login)
+	row := u.db.QueryRowContext(ctx, queries.GetUserByLogin, login)
 	if err := row.Err(); err != nil {
 		return domain.User{}, err
 	}
@@ -126,16 +101,10 @@ func (u *userRepository) GetUserByLogin(ctx context.Context, login string) (doma
 	return user, nil
 }
 
-func (u *userRepository) GetUserByID(ctx context.Context, id int) (domain.User, error) {
-	stmt := `
-		SELECT id, login, version, created_at, updated_at
-		FROM users
-		WHERE id = $1
-	`
-
+func (u *userRepository) GetUserByID(ctx context.Context, id string) (domain.User, error) {
 	user := domain.User{}
 
-	row := u.db.QueryRowContext(ctx, stmt, id)
+	row := u.db.QueryRowContext(ctx, queries.GetUserByID, id)
 	if err := row.Err(); err != nil {
 		return user, err
 	}
@@ -212,7 +181,7 @@ func (u *userRepository) RegisterOrder(ctx context.Context, order domain.Order) 
 	return insertedOrder, nil
 }
 
-func (u *userRepository) GetUserOrders(ctx context.Context, userID int) ([]domain.UserOrder, error) {
+func (u *userRepository) GetUserOrders(ctx context.Context, userID string) ([]domain.UserOrder, error) {
 	rows, err := u.db.QueryContext(ctx, queries.GetUserOrders, userID)
 	if err != nil {
 		return nil, err
@@ -248,7 +217,7 @@ func (u *userRepository) GetUserOrders(ctx context.Context, userID int) ([]domai
 	return orders, nil
 }
 
-func (u *userRepository) GetUserBalance(ctx context.Context, userID int) (domain.UserBalance, error) {
+func (u *userRepository) GetUserBalance(ctx context.Context, userID string) (domain.UserBalance, error) {
 	return u.getUserBalance(ctx, userID)
 }
 
@@ -303,7 +272,7 @@ func (u *userRepository) WithdrawalPoints(ctx context.Context, wp domain.Withdra
 	return id, nil
 }
 
-func (u *userRepository) getUserBalance(ctx context.Context, userID int) (domain.UserBalance, error) {
+func (u *userRepository) getUserBalance(ctx context.Context, userID string) (domain.UserBalance, error) {
 	var balance domain.UserBalance
 
 	// Query the user's balance
@@ -317,7 +286,7 @@ func (u *userRepository) getUserBalance(ctx context.Context, userID int) (domain
 	return balance, nil
 }
 
-func (u *userRepository) GetWithdrawals(ctx context.Context, userID int) ([]domain.Withdrawal, error) {
+func (u *userRepository) GetWithdrawals(ctx context.Context, userID string) ([]domain.Withdrawal, error) {
 	var withdrawals []domain.Withdrawal
 
 	// Replace 'queries.CreateWithdrawalPointsRecord' with the correct query for fetching withdrawals
@@ -426,7 +395,7 @@ func (u *userRepository) UpdateOrder(ctx context.Context, order domain.Order) er
 	logger.Log.InfoContext(ctx,
 		"status and accrual points updated",
 		slog.String("order", order.OrderNumber),
-		slog.Int("userID", order.UserID))
+		slog.String("userID", order.UserID))
 
 	res, err := tx.ExecContext(ctx, queries.UpdateUserLoyaltyPoints, order.Accrual, order.UserID)
 
@@ -442,7 +411,7 @@ func (u *userRepository) UpdateOrder(ctx context.Context, order domain.Order) er
 	logger.Log.InfoContext(ctx,
 		"user loyalty points updated",
 		slog.String("order", order.OrderNumber),
-		slog.Int("userID", order.UserID))
+		slog.String("userID", order.UserID))
 
 	if err := tx.Commit(); err != nil {
 		return err

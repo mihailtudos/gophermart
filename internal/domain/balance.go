@@ -4,7 +4,7 @@ import "time"
 
 type UserBalance struct {
 	ID        string    `json:"-"`
-	UserID    int       `json:"-"`
+	UserID    string    `json:"-"`
 	Current   float64   `json:"current"`
 	Withdrawn float64   `json:"withdrawn"`
 	CreatedAt time.Time `json:"-"`

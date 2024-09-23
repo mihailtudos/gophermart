@@ -25,3 +25,8 @@ const UpdateUserBalance = `
 	WHERE 
 		user_id = $3;
 `
+
+const CreateUserBalanceRecord = `
+	INSERT INTO user_loyalty_points (user_id)
+		VALUES ($1)
+`

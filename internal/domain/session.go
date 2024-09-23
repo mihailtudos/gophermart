@@ -2,10 +2,9 @@ package domain
 
 import "time"
 
-// TODO - swap to UUID
 type Session struct {
-	ID         int       `json:"-"`
-	UserID     int       `json:"-"`
+	ID         string    `json:"-"`
+	UserID     string    `json:"-"`
 	Token      string    `json:"token"`
 	ExpiresAt  time.Time `json:"-"`
 	CreatedAt  time.Time `json:"-"`

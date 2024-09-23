@@ -88,8 +88,8 @@ func (m *Manager) NewRefreshToken() (string, error) {
 	return hex.EncodeToString(b), nil
 }
 
-func (m *Manager) CreateSession(userID int, token string) (domain.Session, error) {
-	if userID <= 0 || token == "" {
+func (m *Manager) CreateSession(userID string, token string) (domain.Session, error) {
+	if userID == "" || token == "" {
 		return domain.Session{}, fmt.Errorf("invalid arguments")
 	}
 

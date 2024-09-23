@@ -4,7 +4,7 @@ import "time"
 
 type Order struct {
 	OrderNumber string    `json:"order" db:"order_number"`
-	UserID      int       `json:"user_id,omitempty" db:"user_id"`
+	UserID      string    `json:"user_id,omitempty" db:"user_id"`
 	OrderStatus string    `json:"status" db:"order_status"`
 	Accrual     float64   `json:"accrual" db:"accrual"`
 	CreatedAt   time.Time `json:"-" db:"created_at"`

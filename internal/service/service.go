@@ -17,7 +17,7 @@ type TokenManager interface {
 	NewJWT(userID string, ttl *time.Duration) (string, error)
 	Parse(accessToken string) (string, error)
 	NewRefreshToken() (string, error)
-	CreateSession(userID int, token string) (domain.Session, error)
+	CreateSession(userID string, token string) (domain.Session, error)
 }
 
 type AccrualClient interface {
