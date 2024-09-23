@@ -6,11 +6,8 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/mihailtudos/gophermart/internal/config"
 	"github.com/mihailtudos/gophermart/internal/domain"
 	"github.com/mihailtudos/gophermart/internal/logger"
-	"github.com/mihailtudos/gophermart/internal/repository"
-	"github.com/mihailtudos/gophermart/internal/service/auth"
 )
 
 type TokenManager interface {
@@ -20,41 +17,47 @@ type TokenManager interface {
 	CreateSession(userID string, token string) (domain.Session, error)
 }
 
+type Auth interface {
+	GenerateUserTokens(ctx context.Context, userID string) (domain.Tokens, error)
+	SetSessionToken(ctx context.Context, userID string, tokens string) error
+	Login(ctx context.Context, input domain.UserAuthInput) (domain.User, error)
+	Register(ctx context.Context, user domain.User) (string, error)
+	VerifyToken(ctx context.Context, token string) (string, error)
+}
+
 type AccrualClient interface {
 	GetOrderInfo(ctx context.Context, order domain.Order) (domain.Order, error)
 }
 
-// TODO - make use of interfaces
-// type tokenManager interfect {
-// ....
-// }
+type UserManager interface {
+	GetUserByID(ctx context.Context, ID string) (domain.User, error)
+	GetUserBalance(ctx context.Context, userID string) (domain.UserBalance, error)
+	WithdrawalPoints(ctx context.Context, wp domain.Withdrawal) (string, error)
+	GetWithdrawals(ctx context.Context, userID string) ([]domain.Withdrawal, error)
+	OrderService
+	Auth
+}
 
-// type userService interface {
-// ....
-// }
+type OrderService interface {
+	UpdateOrder(ctx context.Context, updateOrder domain.Order) error
+	RegisterOrder(ctx context.Context, order domain.Order) (domain.Order, error)
+	GetUserOrders(ctx context.Context, userID string) ([]domain.UserOrder, error)
+	GetUnfinishedOrders(ctx context.Context) ([]domain.Order, error)
+}
 
 type Services struct {
-	UserService   *UserService
+	UserService   UserManager
 	TokenManager  TokenManager
 	AccrualClient AccrualClient
 }
 
-func NewServices(repos *repository.Repositories,
-	authConfig config.AuthConfig,
+func NewServices(userService UserManager,
+	tokenService TokenManager,
 	accrualClient AccrualClient) (*Services, error) {
-	tms, err := auth.NewManager(authConfig.JWT)
-	if err != nil {
-		return nil, err
-	}
-
-	userService, err := NewUserService(repos.UserRepo, tms)
-	if err != nil {
-		return nil, err
-	}
 
 	return &Services{
 		UserService:   userService,
-		TokenManager:  tms,
+		TokenManager:  tokenService,
 		AccrualClient: accrualClient,
 	}, nil
 }

@@ -1,13 +1,14 @@
 package middleware
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"regexp"
 	"strings"
 
+	"github.com/mihailtudos/gophermart/internal/domain"
 	"github.com/mihailtudos/gophermart/internal/repository/postgres"
-	"github.com/mihailtudos/gophermart/internal/service"
 	"github.com/mihailtudos/gophermart/internal/service/auth"
 	"github.com/mihailtudos/gophermart/pkg/helpers"
 )
@@ -19,9 +20,14 @@ const (
 	authTokenIndex     = 1
 )
 
+type authService interface {
+	VerifyToken(ctx context.Context, token string) (string, error)
+	GetUserByID(ctx context.Context, ID string) (domain.User, error)
+}
+
 var bearerRegex = regexp.MustCompile(`^Bearer\s[\w-]*\.[\w-]*\.[\w-]*$`)
 
-func Authenticated(us service.UserService) func(http.Handler) http.Handler {
+func Authenticated(us authService) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// avoid any sort of chaching

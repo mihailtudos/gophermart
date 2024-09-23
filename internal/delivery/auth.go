@@ -12,7 +12,7 @@ import (
 	"github.com/mihailtudos/gophermart/pkg/helpers"
 )
 
-type userService interface {
+type Auth interface {
 	SetSessionToken(ctx context.Context, userID string, tokens string) error
 	GenerateUserTokens(ctx context.Context, userID string) (domain.Tokens, error)
 	Login(ctx context.Context, input domain.UserAuthInput) (domain.User, error)
@@ -20,14 +20,14 @@ type userService interface {
 }
 
 type authHandler struct {
-	userService userService
+	Auth
 }
 
-func NewAuthHanler(us userService) *authHandler {
-	return &authHandler{userService: us}
+func NewAuthHanler(auth Auth) *authHandler {
+	return &authHandler{auth}
 }
 
-func (ah *authHandler) Login(w http.ResponseWriter, r *http.Request) {
+func (ah *authHandler) Signin(w http.ResponseWriter, r *http.Request) {
 	var input domain.UserAuthInput
 	if err := helpers.ReadJSON(w, r, &input); err != nil {
 		ErrorResponse(w, r, http.StatusBadRequest, err.Error())
@@ -46,8 +46,7 @@ func (ah *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 		ErrorResponse(w, r, http.StatusUnauthorized, "invalid credentials")
 		return
 	}
-
-	user, err := ah.userService.Login(r.Context(), input)
+	user, err := ah.Login(r.Context(), input)
 	if err != nil {
 		switch {
 		case errors.Is(err, postgres.ErrNoRowsFound):
@@ -58,14 +57,14 @@ func (ah *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokens, err := ah.userService.GenerateUserTokens(r.Context(), user.ID)
+	tokens, err := ah.GenerateUserTokens(r.Context(), user.ID)
 	if err != nil {
 		ServerErrorResponse(w, r,
 			fmt.Errorf("failed to generate user tokens: %w", err))
 		return
 	}
 
-	if err := ah.userService.SetSessionToken(r.Context(), user.ID, tokens.RefreshToken); err != nil {
+	if err := ah.SetSessionToken(r.Context(), user.ID, tokens.RefreshToken); err != nil {
 		ServerErrorResponse(w, r,
 			fmt.Errorf("failed to set user session: %w", err))
 		return
@@ -87,7 +86,7 @@ func (ah *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (ah *authHandler) Register(w http.ResponseWriter, r *http.Request) {
+func (ah *authHandler) Signup(w http.ResponseWriter, r *http.Request) {
 	var input domain.UserAuthInput
 	if err := helpers.ReadJSON(w, r, &input); err != nil {
 		ErrorResponse(w, r, http.StatusBadRequest, err.Error())
@@ -107,7 +106,7 @@ func (ah *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, err := ah.userService.Register(r.Context(), user)
+	userID, err := ah.Register(r.Context(), user)
 	if err != nil {
 		if errors.Is(err, postgres.ErrDuplicateLogin) {
 			ErrorResponse(w, r, http.StatusConflict, "login has been taken")
@@ -119,14 +118,14 @@ func (ah *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokens, err := ah.userService.GenerateUserTokens(r.Context(), userID)
+	tokens, err := ah.GenerateUserTokens(r.Context(), userID)
 	if err != nil {
 		ServerErrorResponse(w, r,
 			fmt.Errorf("failed to generate user tokens: %w", err))
 		return
 	}
 
-	if err := ah.userService.SetSessionToken(r.Context(), userID, tokens.RefreshToken); err != nil {
+	if err := ah.SetSessionToken(r.Context(), userID, tokens.RefreshToken); err != nil {
 		ServerErrorResponse(w, r,
 			fmt.Errorf("failed to set user session: %w", err))
 		return

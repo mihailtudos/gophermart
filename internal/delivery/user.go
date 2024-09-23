@@ -11,7 +11,6 @@ import (
 	"github.com/mihailtudos/gophermart/internal/delivery/middleware"
 	"github.com/mihailtudos/gophermart/internal/domain"
 	"github.com/mihailtudos/gophermart/internal/repository/postgres"
-	"github.com/mihailtudos/gophermart/internal/service"
 	"github.com/mihailtudos/gophermart/internal/validator"
 	"github.com/mihailtudos/gophermart/pkg/helpers"
 )
@@ -22,17 +21,17 @@ const (
 )
 
 type userHandler struct {
-	userService service.UserService
+	UserManager
 }
 
-func NewUserHandler(us service.UserService) *chi.Mux {
-	uh := userHandler{userService: us}
+func NewUserHandler(um UserManager) *chi.Mux {
+	uh := userHandler{um}
 
 	router := chi.NewMux()
 
 	// user protected routes
 	router.Group(func(r chi.Router) {
-		r.Use(middleware.Authenticated(us))
+		r.Use(middleware.Authenticated(um))
 		r.Post("/orders", uh.registerOrder)
 		r.Get("/orders", uh.getOrders)
 		r.Get("/balance", uh.getBalance)
@@ -71,7 +70,7 @@ func (uh *userHandler) registerOrder(w http.ResponseWriter, r *http.Request) {
 		OrderStatus: domain.OrderStatusNew,
 	}
 
-	_, err = uh.userService.RegisterOrder(r.Context(), order)
+	_, err = uh.RegisterOrder(r.Context(), order)
 
 	if err != nil {
 		switch {
@@ -96,7 +95,7 @@ func (uh *userHandler) registerOrder(w http.ResponseWriter, r *http.Request) {
 func (uh *userHandler) getOrders(w http.ResponseWriter, r *http.Request) {
 	user := helpers.ContextGetUser(r)
 
-	orders, err := uh.userService.GetUserOrders(r.Context(), user.ID)
+	orders, err := uh.GetUserOrders(r.Context(), user.ID)
 	if err != nil {
 		ServerErrorResponse(w, r, err)
 		return
@@ -131,7 +130,7 @@ func (uh *userHandler) getOrders(w http.ResponseWriter, r *http.Request) {
 func (uh *userHandler) getBalance(w http.ResponseWriter, r *http.Request) {
 	user := helpers.ContextGetUser(r)
 
-	balance, err := uh.userService.GetUserBalance(r.Context(), user.ID)
+	balance, err := uh.GetUserBalance(r.Context(), user.ID)
 	if err != nil {
 		ServerErrorResponse(w, r, err)
 		return
@@ -161,7 +160,7 @@ func (uh *userHandler) withrawalPoints(w http.ResponseWriter, r *http.Request) {
 	}
 	withdrawalsRequest.UserID = user.ID
 
-	_, err := uh.userService.WithdrawalPoints(r.Context(), withdrawalsRequest)
+	_, err := uh.WithdrawalPoints(r.Context(), withdrawalsRequest)
 	if err != nil {
 		if errors.Is(err, postgres.ErrInsufficientPoints) {
 			ErrorResponse(w, r, http.StatusPaymentRequired, "insufficient points")
@@ -175,7 +174,7 @@ func (uh *userHandler) withrawalPoints(w http.ResponseWriter, r *http.Request) {
 
 func (uh *userHandler) getWithrawals(w http.ResponseWriter, r *http.Request) {
 	user := helpers.ContextGetUser(r)
-	withdrawals, err := uh.userService.GetWithdrawals(r.Context(), user.ID)
+	withdrawals, err := uh.GetWithdrawals(r.Context(), user.ID)
 	if err != nil {
 		ServerErrorResponse(w, r, err)
 		return

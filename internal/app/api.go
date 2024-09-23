@@ -17,6 +17,7 @@ import (
 	"github.com/mihailtudos/gophermart/internal/repository"
 	"github.com/mihailtudos/gophermart/internal/server"
 	"github.com/mihailtudos/gophermart/internal/service"
+	"github.com/mihailtudos/gophermart/internal/service/auth"
 )
 
 func Run() error {
@@ -40,7 +41,17 @@ func Run() error {
 		return errors.New("failed to initialize accrual client")
 	}
 
-	ss, err := service.NewServices(repos, cfg.Auth, accrualClient)
+	tms, err := auth.NewManager(cfg.Auth.JWT)
+	if err != nil {
+		return err
+	}
+
+	userService, err := service.NewUserService(repos.UserRepo, tms)
+	if err != nil {
+		return err
+	}
+
+	ss, err := service.NewServices(userService, tms, accrualClient)
 
 	// starting the backgorun process
 	ss.UpdateOrdersInBackground(ctx, 1*time.Second)
@@ -52,7 +63,7 @@ func Run() error {
 		return err
 	}
 
-	srv := server.NewServer(cfg.HTTP, delivery.NewHandler(ss))
+	srv := server.NewServer(cfg.HTTP, delivery.NewHandler(ss.UserService, ss.UserService))
 
 	go func() {
 		if err := srv.Run(); !errors.Is(err, http.ErrServerClosed) {

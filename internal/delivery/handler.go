@@ -1,19 +1,41 @@
 package delivery
 
 import (
+	"context"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
-	"github.com/mihailtudos/gophermart/internal/service"
+	"github.com/mihailtudos/gophermart/internal/domain"
 )
 
-type Handler struct {
-	services *service.Services
+type AuthManager interface {
+	SetSessionToken(ctx context.Context, userID string, tokens string) error
+	GenerateUserTokens(ctx context.Context, userID string) (domain.Tokens, error)
+	Login(ctx context.Context, input domain.UserAuthInput) (domain.User, error)
+	Register(ctx context.Context, user domain.User) (string, error)
+}
+type UserManager interface {
+	RegisterOrder(ctx context.Context, order domain.Order) (domain.Order, error)
+	VerifyToken(ctx context.Context, token string) (string, error)
+	GetUserByID(ctx context.Context, ID string) (domain.User, error)
+	GetUserOrders(ctx context.Context, userID string) ([]domain.UserOrder, error)
+	GetUnfinishedOrders(ctx context.Context) ([]domain.Order, error)
+	UpdateOrder(ctx context.Context, updatedOrder domain.Order) error
+	GetUserBalance(ctx context.Context, userID string) (domain.UserBalance, error)
+	WithdrawalPoints(ctx context.Context, wp domain.Withdrawal) (string, error)
+	GetWithdrawals(ctx context.Context, userID string) ([]domain.Withdrawal, error)
 }
 
-func NewHandler(s *service.Services) *chi.Mux {
+type Handler struct {
+	Auth        AuthManager
+	UserManager UserManager
+}
+
+func NewHandler(ah AuthManager, um UserManager) *chi.Mux {
 	h := &Handler{
-		services: s,
+		Auth:        ah,
+		UserManager: um,
 	}
 
 	router := chi.NewMux()
@@ -29,13 +51,12 @@ func NewHandler(s *service.Services) *chi.Mux {
 		MaxAge:           300, // Maximum value not ignored by any of major browsers
 	}))
 
-	userHandler := NewUserHandler(*h.services.UserService)
-	authHandler := NewAuthHanler(h.services.UserService)
+	authHandler := NewAuthHanler(h.Auth)
 
 	router.Route("/api/user", func(r chi.Router) {
-		r.Mount("/", userHandler)                 // Mount the general user routes here
-		r.Post("/login", authHandler.Login)       // Add specific login route
-		r.Post("/register", authHandler.Register) // Add specific register route
+		r.Mount("/", NewUserHandler(h.UserManager))
+		r.Post("/login", authHandler.Signin)
+		r.Post("/register", authHandler.Signup)
 	})
 
 	return router
