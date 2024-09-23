@@ -7,10 +7,6 @@ run/accrual:
 run/dbs:
 	docker compose up -d
 
-# TODO - ensure it passes lint https://golangci-lint.run/
-run/ling:
-    golangci-lint run ./...
-
 migrate/up:
 	goose -dir internal/repository/db/migrations postgres "postgres://admin:admin@localhost:5432/db?sslmode=disable" up
 
@@ -35,7 +31,10 @@ run/autotest: build/gophermart
 run/statictest:
 	go vet -vettool=/usr/local/bin/statictest ./...
 
-.PHONY: run/gophermart, run/db, migrate/up, migrate/down, run/accrual, build/gophermart, autotest/run, run/statictest
+run/lint:
+	golangci-lint run ./...
+
+.PHONY: run/gophermart, run/db, migrate/up, migrate/down, run/accrual, build/gophermart, autotest/run, run/statictest, run/lint
 
 
 GOLANGCI_LINT_CACHE?=/tmp/praktikum-golangci-lint-cache

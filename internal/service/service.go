@@ -21,16 +21,16 @@ type TokenManager interface {
 }
 
 type AccrualClient interface {
-	GetOrderInfo(domain.Order) (domain.Order, error)
+	GetOrderInfo(ctx context.Context, order domain.Order) (domain.Order, error)
 }
 
 // TODO - make use of interfaces
-type tokenManager interfect {
-....
-}
-type userService interface {
-....
-}
+// type tokenManager interfect {
+// ....
+// }
+// type userService interface {
+// ....
+// }
 
 type Services struct {
 	UserService   *UserService
@@ -97,7 +97,7 @@ func (ss *Services) updateOrders(ctx context.Context) {
 	}
 
 	for _, order := range orders {
-		updateOrder, err := ss.AccrualClient.GetOrderInfo(order)
+		updateOrder, err := ss.AccrualClient.GetOrderInfo(ctx, order)
 		if err != nil {
 			logger.Log.Error("update orders: get order info", slog.String("err", err.Error()))
 			continue
@@ -107,7 +107,7 @@ func (ss *Services) updateOrders(ctx context.Context) {
 
 		if order.OrderStatus != updateOrder.OrderStatus {
 			err := ss.UserService.UpdateOrder(ctx, updateOrder)
-			
+
 			if err != nil {
 				logger.Log.Error("failed to update the order status", slog.String("err", err.Error()))
 			}

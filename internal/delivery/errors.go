@@ -14,7 +14,7 @@ func FailedValidationResponse(w http.ResponseWriter, r *http.Request, errors map
 
 func ErrorResponse(w http.ResponseWriter, r *http.Request, status int, message any) {
 	env := helpers.Envelope{"error": message}
-	err := helpers.WriteJSON(w, status, env, nil)
+	_, err := helpers.WriteJSON(w, status, env, nil)
 	if err != nil {
 		logger.LogError(r.Context(), err, "failed to write json response")
 		w.WriteHeader(http.StatusInternalServerError)

@@ -1,6 +1,7 @@
 package accrual
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -26,15 +27,15 @@ func New(accrualAddress string) *Client {
 		Address: accrualAddress,
 	}
 }
-func (c *Client) GetOrderInfo(order domain.Order) (domain.Order, error) {
-	url, err := url.Parse(fmt.Sprintf(c.Address+"/api/orders/%s", order.OrderNumber))
+func (c *Client) GetOrderInfo(ctx context.Context, order domain.Order) (domain.Order, error) {
+	URL, err := url.Parse(fmt.Sprintf(c.Address+"/api/orders/%s", order.OrderNumber))
 	if err != nil {
 		return domain.Order{}, fmt.Errorf("failed to parse URL: %w", err)
 	}
 
-	logger.Log.Info("handling order number " + url.String())
+	logger.Log.InfoContext(ctx, "handling order number "+URL.String())
 
-	req, err := http.NewRequest(http.MethodGet, url.String(), nil)
+	req, err := http.NewRequest(http.MethodGet, URL.String(), http.NoBody)
 	if err != nil {
 		return domain.Order{}, fmt.Errorf("failed to create HTTP request: %w", err)
 	}

@@ -307,7 +307,7 @@ func (u *userRepository) getUserBalance(ctx context.Context, userID int) (domain
 	var balance domain.UserBalance
 
 	// Query the user's balance
-	row := u.db.QueryRowContext(ctx, queries.GetUserBalanceStmt, userID)
+	row := u.db.QueryRowContext(ctx, queries.GetUserBalance, userID)
 
 	// Scan the result into the balance struct
 	if err := row.Scan(&balance.Current, &balance.Withdrawn); err != nil {
@@ -378,10 +378,14 @@ func (u *userRepository) GetUnfinishedOrders(ctx context.Context) ([]domain.Orde
 
 	for rows.Next() {
 		var order domain.Order
-		rows.Scan(
+		err := rows.Scan(
 			&order.OrderNumber,
 			&order.OrderStatus,
 			&order.Accrual)
+
+		if err != nil {
+			return orders, err
+		}
 
 		orders = append(orders, order)
 	}

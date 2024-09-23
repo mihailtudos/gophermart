@@ -4,16 +4,16 @@ import (
 	"errors"
 	"regexp"
 	"unicode"
+	"unicode/utf8"
 )
 
 // TODO - low sev, could be replaced with https://pkg.go.dev/github.com/go-playground/validator/v10
 var (
-	EmailRX = regexp.MustCompile(`^[a-zA-Z0-9.!#$%&'*+/=?^_` + "`" + `{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$`)
+	EmailRX = regexp.MustCompile(`^[a-zA-Z0-9.!#$%&'*+/=?^_` + "`" + `{|}~-]+@[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z]{2,})+$`)
 
 	ErrValidation = errors.New("validation error")
 )
 
-// TODO - add unit tests
 type Validator struct {
 	Errors map[string]string
 }
@@ -59,22 +59,26 @@ func Unique[T comparable](values []T) bool {
 	return len(values) == len(uniqueValues)
 }
 
-
 func IsValidOrderNumber(number string) bool {
+	// invalid number
+	if utf8.RuneCountInString(number) < 2 {
+		return false
+	}
+
 	var sum int
-	var alternate bool
 
-	// TODO - use for range instead
-	for i := len(number) - 1; i >= 0; i-- {
-		digit := number[i]
-
-		if !unicode.IsDigit(rune(digit)) {
+	// Use for range to iterate over the string from left to right
+	for i, digit := range number {
+		if !unicode.IsDigit(digit) {
 			return false
 		}
 
+		// Get the integer value of the digit
 		n := int(digit - '0')
 
-		if alternate {
+		// Since the Luhn algorithm typically operates from right to left,
+		// reverse the alternate pattern using the index.
+		if (len(number)-i)%2 == 0 {
 			n *= 2
 			if n > 9 {
 				n -= 9
@@ -82,7 +86,6 @@ func IsValidOrderNumber(number string) bool {
 		}
 
 		sum += n
-		alternate = !alternate
 	}
 
 	return sum%10 == 0

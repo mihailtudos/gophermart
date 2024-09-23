@@ -27,3 +27,5 @@ vendor/
 /build
 
 .env
+
+/golangci-lint

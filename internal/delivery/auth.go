@@ -33,7 +33,10 @@ func (ah *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user := domain.User{Login: input.Login}
-	user.Password.Set(input.Password)
+	if err := user.Password.Set(input.Password); err != nil {
+		ServerErrorResponse(w, r, err)
+		return
+	}
 
 	v := validator.New()
 	domain.ValidateUser(v, &user)
@@ -69,7 +72,7 @@ func (ah *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 	// Set the Authorization header
 	helpers.SetAuthorizationHeaders(w, tokens)
 
-	err = helpers.WriteJSON(w, http.StatusOK,
+	_, err = helpers.WriteJSON(w, http.StatusOK,
 		helpers.Envelope{
 			"access_token":  tokens.AccessToken,
 			"refresh_token": tokens.RefreshToken,
@@ -90,7 +93,10 @@ func (ah *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user := domain.User{Login: input.Login}
-	user.Password.Set(input.Password)
+	if err := user.Password.Set(input.Password); err != nil {
+		ServerErrorResponse(w, r, err)
+		return
+	}
 
 	v := validator.New()
 	domain.ValidateUser(v, &user)
@@ -128,7 +134,7 @@ func (ah *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 	helpers.SetAuthorizationHeaders(w, tokens)
 
 	// Respond with the tokens in the JSON body
-	err = helpers.WriteJSON(w, http.StatusOK,
+	_, err = helpers.WriteJSON(w, http.StatusOK,
 		helpers.Envelope{
 			"access_token":  tokens.AccessToken,
 			"refresh_token": tokens.RefreshToken,

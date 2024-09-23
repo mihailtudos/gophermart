@@ -39,15 +39,18 @@ func WriteUnwrappedJSON(w http.ResponseWriter, status int, data any, headers htt
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	w.Write(js)
+	_, err = w.Write(js)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
 
-func WriteJSON(w http.ResponseWriter, status int, data Envelope, headers http.Header) error {
+func WriteJSON(w http.ResponseWriter, status int, data Envelope, headers http.Header) (int, error) {
 	js, err := json.MarshalIndent(data, "", "\t")
 	if err != nil {
-		return err
+		return 0, err
 	}
 	js = append(js, '\n')
 
@@ -57,9 +60,8 @@ func WriteJSON(w http.ResponseWriter, status int, data Envelope, headers http.He
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	w.Write(js)
 
-	return nil
+	return w.Write(js)
 }
 
 func ReadJSON(w http.ResponseWriter, r *http.Request, dst any) error {

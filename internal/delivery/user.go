@@ -23,7 +23,6 @@ const (
 
 type userHandler struct {
 	userService service.UserService
-	authService service.TokenManager
 }
 
 func NewUserHandler(us service.UserService) *chi.Mux {
@@ -107,7 +106,11 @@ func (uh *userHandler) getOrders(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("order cOunt", len(orders))
 
 	if len(orders) == 0 {
-		helpers.WriteJSON(w, http.StatusNoContent, nil, nil)
+		_, err := helpers.WriteJSON(w, http.StatusNoContent, nil, nil)
+		if err != nil {
+			ServerErrorResponse(w, r, err)
+		}
+
 		return
 	}
 
@@ -119,7 +122,10 @@ func (uh *userHandler) getOrders(w http.ResponseWriter, r *http.Request) {
 	js = append(js, '\n')
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(js)
+	if _, err := w.Write(js); err != nil {
+		ServerErrorResponse(w, r, err)
+		return
+	}
 }
 
 func (uh *userHandler) getBalance(w http.ResponseWriter, r *http.Request) {
@@ -180,5 +186,8 @@ func (uh *userHandler) getWithrawals(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	helpers.WriteUnwrappedJSON(w, http.StatusOK, withdrawals, nil)
+	if err := helpers.WriteUnwrappedJSON(w, http.StatusOK, withdrawals, nil); err != nil {
+		ServerErrorResponse(w, r, err)
+		return
+	}
 }
