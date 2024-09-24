@@ -53,7 +53,6 @@ func (uh *userHandler) registerOrder(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unable to read request body", http.StatusBadRequest)
 		return
 	}
-	defer r.Body.Close()
 	input := string(body)
 
 	v := validator.New()
