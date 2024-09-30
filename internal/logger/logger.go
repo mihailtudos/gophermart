@@ -16,7 +16,7 @@ var (
 	Log                    *slog.Logger
 )
 
-func Init(destination io.Writer, l string) {
+func New(destination io.Writer, l string) {
 	once.Do(func() {
 		if destination == nil {
 			destination = os.Stdout

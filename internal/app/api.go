@@ -22,7 +22,7 @@ import (
 
 func Run() error {
 	cfg := config.NewConfig()
-	logger.Init(nil, cfg.Logger.Level)
+	logger.New(nil, cfg.Logger.Level)
 
 	// Create a context that will be canceled on shutdown signal
 	ctx, cancel := context.WithCancel(context.Background())

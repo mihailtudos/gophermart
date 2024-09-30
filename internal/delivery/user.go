@@ -20,12 +20,12 @@ const (
 	PlainTextContentType  = "text/plain"
 )
 
-type userHandler struct {
+type UserHandler struct {
 	UserManager
 }
 
 func NewUserHandler(um UserManager) *chi.Mux {
-	uh := userHandler{um}
+	uh := UserHandler{um}
 
 	router := chi.NewMux()
 
@@ -42,7 +42,7 @@ func NewUserHandler(um UserManager) *chi.Mux {
 	return router
 }
 
-func (uh *userHandler) registerOrder(w http.ResponseWriter, r *http.Request) {
+func (uh *UserHandler) registerOrder(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get(ContentTypeHeaderName) != PlainTextContentType {
 		ErrorResponse(w, r, http.StatusBadRequest, nil)
 		return
@@ -91,7 +91,7 @@ func (uh *userHandler) registerOrder(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
-func (uh *userHandler) getOrders(w http.ResponseWriter, r *http.Request) {
+func (uh *UserHandler) getOrders(w http.ResponseWriter, r *http.Request) {
 	user := helpers.ContextGetUser(r)
 
 	orders, err := uh.GetUserOrders(r.Context(), user.ID)
@@ -126,7 +126,7 @@ func (uh *userHandler) getOrders(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (uh *userHandler) getBalance(w http.ResponseWriter, r *http.Request) {
+func (uh *UserHandler) getBalance(w http.ResponseWriter, r *http.Request) {
 	user := helpers.ContextGetUser(r)
 
 	balance, err := uh.GetUserBalance(r.Context(), user.ID)
@@ -141,7 +141,7 @@ func (uh *userHandler) getBalance(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (uh *userHandler) withrawalPoints(w http.ResponseWriter, r *http.Request) {
+func (uh *UserHandler) withrawalPoints(w http.ResponseWriter, r *http.Request) {
 	user := helpers.ContextGetUser(r)
 	var withdrawalsRequest domain.Withdrawal
 	if err := helpers.ReadJSON(w, r, &withdrawalsRequest); err != nil {
@@ -171,7 +171,7 @@ func (uh *userHandler) withrawalPoints(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (uh *userHandler) getWithrawals(w http.ResponseWriter, r *http.Request) {
+func (uh *UserHandler) getWithrawals(w http.ResponseWriter, r *http.Request) {
 	user := helpers.ContextGetUser(r)
 	withdrawals, err := uh.GetWithdrawals(r.Context(), user.ID)
 	if err != nil {
