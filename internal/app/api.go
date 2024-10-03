@@ -22,7 +22,7 @@ import (
 
 const (
 	shutdownTimeout     = 5 * time.Second
-	updateOrdersTimeout = 1 * time.Minute
+	updateOrdersTimeout = 3 * time.Second
 )
 
 func Run() error {
