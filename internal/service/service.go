@@ -96,10 +96,6 @@ func (ss *Services) updateOrders(ctx context.Context) {
 		return
 	}
 
-	for _, v := range orders {
-		fmt.Println(v.OrderNumber, v.OrderStatus)
-	}
-
 	for _, order := range orders {
 		updateOrder, err := ss.AccrualClient.GetOrderInfo(ctx, order)
 		if err != nil {
@@ -109,6 +105,8 @@ func (ss *Services) updateOrders(ctx context.Context) {
 
 		fmt.Printf("GetOrderInfo %#v", updateOrder)
 
+		// TODO: Batch update 
+		// TODO: Batch update background 
 		if order.OrderStatus != updateOrder.OrderStatus {
 			err := ss.UserService.UpdateOrder(ctx, updateOrder)
 

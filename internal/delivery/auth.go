@@ -19,15 +19,15 @@ type Auth interface {
 	Register(ctx context.Context, user domain.User) (string, error)
 }
 
-type authHandler struct {
+type AuthHandler struct {
 	Auth
 }
 
-func NewAuthHanler(auth Auth) *authHandler {
-	return &authHandler{auth}
+func NewAuthHanler(auth Auth) *AuthHandler {
+	return &AuthHandler{auth}
 }
 
-func (ah *authHandler) Signin(w http.ResponseWriter, r *http.Request) {
+func (ah *AuthHandler) Signin(w http.ResponseWriter, r *http.Request) {
 	var input domain.UserAuthInput
 	if err := helpers.ReadJSON(w, r, &input); err != nil {
 		ErrorResponse(w, r, http.StatusBadRequest, err.Error())
@@ -86,7 +86,7 @@ func (ah *authHandler) Signin(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (ah *authHandler) Signup(w http.ResponseWriter, r *http.Request) {
+func (ah *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 	var input domain.UserAuthInput
 	if err := helpers.ReadJSON(w, r, &input); err != nil {
 		ErrorResponse(w, r, http.StatusBadRequest, err.Error())

@@ -14,18 +14,18 @@ import (
 	"github.com/mihailtudos/gophermart/internal/repository/postgres/queries"
 )
 
-type userRepository struct {
+type UserRepository struct {
 	db *sqlx.DB
 }
 
-func NewUserRepository(db *sqlx.DB) (*userRepository, error) {
-	return &userRepository{
+func NewUserRepository(db *sqlx.DB) (*UserRepository, error) {
+	return &UserRepository{
 		db: db,
 	}, nil
 }
 
 // TODO - checkout https://sqlc.dev/
-func (u *userRepository) Create(ctx context.Context, user domain.User) (string, error) {
+func (u *UserRepository) Create(ctx context.Context, user domain.User) (string, error) {
 	var userID string
 
 	tx, err := u.db.BeginTx(ctx, nil)
@@ -60,7 +60,7 @@ func (u *userRepository) Create(ctx context.Context, user domain.User) (string, 
 	return userID, nil
 }
 
-func (u *userRepository) SetSessionToken(ctx context.Context, st domain.Session) error {
+func (u *UserRepository) SetSessionToken(ctx context.Context, st domain.Session) error {
 	_, err := u.db.ExecContext(ctx, queries.DeleteUserSession, st.UserID)
 	if err != nil {
 		return fmt.Errorf("error deleting old token: %w", err)
@@ -74,7 +74,7 @@ func (u *userRepository) SetSessionToken(ctx context.Context, st domain.Session)
 	return nil
 }
 
-func (u *userRepository) GetUserByLogin(ctx context.Context, login string) (domain.User, error) {
+func (u *UserRepository) GetUserByLogin(ctx context.Context, login string) (domain.User, error) {
 	row := u.db.QueryRowContext(ctx, queries.GetUserByLogin, login)
 	if err := row.Err(); err != nil {
 		return domain.User{}, err
@@ -101,7 +101,7 @@ func (u *userRepository) GetUserByLogin(ctx context.Context, login string) (doma
 	return user, nil
 }
 
-func (u *userRepository) GetUserByID(ctx context.Context, id string) (domain.User, error) {
+func (u *UserRepository) GetUserByID(ctx context.Context, id string) (domain.User, error) {
 	user := domain.User{}
 
 	row := u.db.QueryRowContext(ctx, queries.GetUserByID, id)
@@ -124,7 +124,7 @@ func (u *userRepository) GetUserByID(ctx context.Context, id string) (domain.Use
 	return user, nil
 }
 
-func (u *userRepository) RegisterOrder(ctx context.Context, order domain.Order) (domain.Order, error) {
+func (u *UserRepository) RegisterOrder(ctx context.Context, order domain.Order) (domain.Order, error) {
 	tx, err := u.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return domain.Order{}, err
@@ -181,7 +181,7 @@ func (u *userRepository) RegisterOrder(ctx context.Context, order domain.Order) 
 	return insertedOrder, nil
 }
 
-func (u *userRepository) GetUserOrders(ctx context.Context, userID string) ([]domain.UserOrder, error) {
+func (u *UserRepository) GetUserOrders(ctx context.Context, userID string) ([]domain.UserOrder, error) {
 	rows, err := u.db.QueryContext(ctx, queries.GetUserOrders, userID)
 	if err != nil {
 		return nil, err
@@ -217,11 +217,11 @@ func (u *userRepository) GetUserOrders(ctx context.Context, userID string) ([]do
 	return orders, nil
 }
 
-func (u *userRepository) GetUserBalance(ctx context.Context, userID string) (domain.UserBalance, error) {
+func (u *UserRepository) GetUserBalance(ctx context.Context, userID string) (domain.UserBalance, error) {
 	return u.getUserBalance(ctx, userID)
 }
 
-func (u *userRepository) WithdrawalPoints(ctx context.Context, wp domain.Withdrawal) (string, error) {
+func (u *UserRepository) WithdrawalPoints(ctx context.Context, wp domain.Withdrawal) (string, error) {
 	var id string
 
 	// Get the current user balance
@@ -272,7 +272,7 @@ func (u *userRepository) WithdrawalPoints(ctx context.Context, wp domain.Withdra
 	return id, nil
 }
 
-func (u *userRepository) getUserBalance(ctx context.Context, userID string) (domain.UserBalance, error) {
+func (u *UserRepository) getUserBalance(ctx context.Context, userID string) (domain.UserBalance, error) {
 	var balance domain.UserBalance
 
 	// Query the user's balance
@@ -286,7 +286,7 @@ func (u *userRepository) getUserBalance(ctx context.Context, userID string) (dom
 	return balance, nil
 }
 
-func (u *userRepository) GetWithdrawals(ctx context.Context, userID string) ([]domain.Withdrawal, error) {
+func (u *UserRepository) GetWithdrawals(ctx context.Context, userID string) ([]domain.Withdrawal, error) {
 	var withdrawals []domain.Withdrawal
 
 	// Replace 'queries.CreateWithdrawalPointsRecord' with the correct query for fetching withdrawals
@@ -323,7 +323,7 @@ func (u *userRepository) GetWithdrawals(ctx context.Context, userID string) ([]d
 	return withdrawals, nil
 }
 
-func (u *userRepository) GetUnfinishedOrders(ctx context.Context) ([]domain.Order, error) {
+func (u *UserRepository) GetUnfinishedOrders(ctx context.Context) ([]domain.Order, error) {
 	var orders []domain.Order
 
 	tx, err := u.db.BeginTx(ctx, &sql.TxOptions{})
@@ -370,7 +370,7 @@ func (u *userRepository) GetUnfinishedOrders(ctx context.Context) ([]domain.Orde
 	return orders, nil
 }
 
-func (u *userRepository) UpdateOrder(ctx context.Context, order domain.Order) error {
+func (u *UserRepository) UpdateOrder(ctx context.Context, order domain.Order) error {
 	tx, err := u.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
