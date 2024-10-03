@@ -20,6 +20,11 @@ import (
 	"github.com/mihailtudos/gophermart/internal/service/auth"
 )
 
+const (
+	shutdownTimeout     = 5 * time.Second
+	updateOrdersTimeout = 1 * time.Minute
+)
+
 func Run() error {
 	cfg := config.NewConfig()
 	logger.New(nil, cfg.Logger.Level)
@@ -54,7 +59,7 @@ func Run() error {
 	ss, err := service.NewServices(userService, tms, accrualClient)
 
 	// starting the backgorun process
-	ss.UpdateOrdersInBackground(ctx, 1*time.Second)
+	ss.UpdateOrdersInBackground(ctx, updateOrdersTimeout)
 
 	if err != nil {
 		logger.Log.ErrorContext(ctx,
@@ -81,8 +86,7 @@ func Run() error {
 	// Trigger the context cancellation to stop the background process
 	cancel()
 
-	const timeout = 5 * time.Second
-	ctx, shutdown := context.WithTimeout(ctx, timeout)
+	ctx, shutdown := context.WithTimeout(ctx, shutdownTimeout)
 	defer shutdown()
 
 	// stopping server
